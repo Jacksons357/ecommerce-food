@@ -20,7 +20,7 @@ export function useCartStore() {
         console.log('Auth mudou:', auth?.user?.name, 'Tipo:', userType);
         cartStore.setAuth(auth);
         setIsInitialized(true);
-    }, [auth?.user?.id, auth?.user?.tipo_usuario]); // Só executar quando o usuário ou tipo mudar
+    }, [auth]); // Incluir auth como dependência
 
     // Inscrever para mudanças no carrinho (apenas uma vez)
     useEffect(() => {

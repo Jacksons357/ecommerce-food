@@ -35,32 +35,18 @@ interface CartItem {
     imagem?: string;
 }
 
-interface Carrinho {
-    id: number;
-    items: CarrinhoItem[];
-    total: number;
-    quantidade_total: number;
-}
-
-interface Props {
-    carrinho?: Carrinho;
-}
-
-export default function CarrinhoIndex({ carrinho }: Props) {
+export default function CarrinhoIndex() {
     const page = usePage<SharedData>();
     const { auth } = page.props;
     const { 
         items, 
         count,
         total,
-        isLoading,
         isAuthenticated,
         isAdmin,
-        addToCart,
         updateQuantity, 
         removeFromCart, 
         clearCart,
-        syncLocalCart,
         syncCartMutation
     } = useCart();
     

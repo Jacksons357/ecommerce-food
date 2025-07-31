@@ -22,9 +22,9 @@ test('users can authenticate using the login screen', function () {
     $response->assertRedirect(route('dashboard', absolute: false));
 });
 
-test('clients can authenticate and are redirected to home', function () {
+test('clients can authenticate and are redirected to carrinho', function () {
     $user = User::factory()->create([
-        'tipo_usuario' => 'cliente', // Cliente vai para home
+        'tipo_usuario' => 'cliente', // Cliente vai para carrinho para sincronizar itens
     ]);
 
     $response = $this->post('/login', [
@@ -33,7 +33,7 @@ test('clients can authenticate and are redirected to home', function () {
     ]);
 
     $this->assertAuthenticated();
-    $response->assertRedirect(route('home', absolute: false));
+    $response->assertRedirect(route('carrinho.index', absolute: false));
 });
 
 test('users can not authenticate with invalid password', function () {
