@@ -50,6 +50,10 @@ export default function CarrinhoIndex() {
         syncCartMutation
     } = useCart();
     
+    console.log('CarrinhoIndex - Items received:', items);
+    console.log('CarrinhoIndex - Count:', count);
+    console.log('CarrinhoIndex - Total:', total);
+    
     // Hook para sincronização automática
     useCartSync();
     
@@ -194,6 +198,8 @@ export default function CarrinhoIndex() {
             setIsFinalizando(false);
         }
     };
+
+    console.log('CarrinhoIndex - Before return, items:', items, 'length:', items.length);
 
     return (
         <>

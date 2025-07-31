@@ -161,6 +161,8 @@ export function useCart() {
   
   const queryClient = useQueryClient();
   const { items: localItems, setItems, clearCart: clearLocalCart } = useCartStore();
+  
+  console.log('useCart - Local items from store:', localItems);
 
   // Query para carregar carrinho do servidor (apenas se autenticado e não admin)
   const {
@@ -234,16 +236,35 @@ export function useCart() {
   });
 
   // Determinar quais itens mostrar
-  const items = isAuthenticated && !isAdmin && serverCart?.carrinho?.items
-    ? serverCart.carrinho.items.map(item => ({
-        id: item.id,
-        produto_id: item.produto_id,
-        nome: item.produto.nome,
-        preco: item.preco_unitario,
-        quantidade: item.quantidade,
-        imagem: item.produto.imagem,
-      }))
-    : localItems;
+  let items: CartItem[] = [];
+  
+  console.log('useCart - Auth check:', { isAuthenticated, isAdmin });
+  console.log('useCart - Server cart check:', { hasServerCart: !!serverCart, hasItems: !!serverCart?.carrinho?.items });
+  console.log('useCart - Local items count:', localItems.length);
+  console.log('useCart - Local items:', localItems);
+  
+  // Para usuários não autenticados ou admins, sempre usar itens locais
+  if (!isAuthenticated || isAdmin) {
+    console.log('useCart - Using local items (not authenticated or admin)');
+    items = localItems;
+  } else if (serverCart?.carrinho?.items && serverCart.carrinho.items.length > 0) {
+    // Para usuários autenticados (clientes), usar itens do servidor se disponíveis
+    console.log('useCart - Using server items (authenticated client)');
+    items = serverCart.carrinho.items.map(item => ({
+      id: item.id,
+      produto_id: item.produto_id,
+      nome: item.produto.nome,
+      preco: item.preco_unitario,
+      quantidade: item.quantidade,
+      imagem: item.produto.imagem,
+    }));
+  } else {
+    // Fallback para itens locais se não houver dados do servidor
+    console.log('useCart - Using local items as fallback');
+    items = localItems;
+  }
+  
+  console.log('useCart - Final items:', items);
 
   const isLoading = isLoadingServer || addItemMutation.isPending || 
                    updateQuantityMutation.isPending || removeItemMutation.isPending || 

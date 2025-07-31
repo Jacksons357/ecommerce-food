@@ -3,53 +3,56 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useCartStore } from '@/hooks/use-cart-store';
+import { useCart } from '@/hooks/use-cart';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { ArrowLeft, CreditCard, LogIn, Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
-
-// Interface removida pois não está sendo usada
+import { useState } from 'react';
 
 export default function CarrinhoPublico() {
-    const { items: cartItems, updateQuantity, removeFromCart, clearCart } = useCartStore();
-    const [loading] = useState(false);
+    const { 
+        items: cartItems, 
+        updateQuantity, 
+        removeFromCart, 
+        clearCart,
+        total,
+        isLoading
+    } = useCart();
+    
     const [showClearCartDialog, setShowClearCartDialog] = useState(false);
-
-    // Carregar carrinho do localStorage
-    useEffect(() => {
-        // O contexto já carrega automaticamente
-    }, []);
+    
+    console.log('CarrinhoPublico - Items:', cartItems);
+    console.log('CarrinhoPublico - Total:', total);
+    console.log('CarrinhoPublico - Loading:', isLoading);
 
     // Atualizar quantidade
-    const handleUpdateQuantity = (itemId: number, newQuantity: number) => {
+    const handleUpdateQuantity = async (itemId: number, newQuantity: number) => {
         if (newQuantity <= 0) {
-            removeFromCart(itemId);
+            await removeFromCart(itemId);
             return;
         }
-        updateQuantity(itemId, newQuantity);
+        await updateQuantity(itemId, newQuantity);
     };
 
     // Remover item
-    const handleRemoveItem = (itemId: number) => {
-        removeFromCart(itemId);
+    const handleRemoveItem = async (itemId: number) => {
+        await removeFromCart(itemId);
     };
 
     // Limpar carrinho
-    const handleClearCart = () => {
-        clearCart();
+    const handleClearCart = async () => {
+        await clearCart();
         setShowClearCartDialog(false);
     };
-
-    // Calcular total
-    const total = cartItems.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
 
     // Finalizar pedido (redirecionar para login)
     const finalizarPedido = () => {
         router.visit('/login');
     };
 
+    console.log('CarrinhoPublico - Checking cartItems.length:', cartItems.length);
+    
     if (cartItems.length === 0) {
         return (
             <AppLayout>
@@ -274,9 +277,9 @@ export default function CarrinhoPublico() {
                                                 <Button
                                                     onClick={finalizarPedido}
                                                     className="w-full bg-gradient-to-r from-orange-600 to-red-600 py-3 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700"
-                                                    disabled={loading}
+                                                    disabled={isLoading}
                                                 >
-                                                    {loading ? (
+                                                    {isLoading ? (
                                                         <>
                                                             <div className="mr-2 h-5 w-5 animate-spin rounded-full border-b-2 border-white" />
                                                             Processando...

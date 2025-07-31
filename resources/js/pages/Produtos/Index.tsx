@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useCart } from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
-import { Head, router, usePage } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Filter, Grid, List, Search, ShoppingCart, Star } from 'lucide-react';
 import { useState } from 'react';
@@ -101,7 +101,7 @@ export default function ProdutosIndex({ produtos }: Props) {
                                 </p>
                             </div>
 
-                            {!isAdmin ? (
+                            {/* {!isAdmin ? (
                                 <Button
                                     onClick={() => router.visit('/carrinho')}
                                     className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
@@ -113,7 +113,7 @@ export default function ProdutosIndex({ produtos }: Props) {
                                 <div className="text-center">
                                     <p className="text-sm text-gray-600">Administradores não podem acessar o carrinho</p>
                                 </div>
-                            )}
+                            )} */}
                         </div>
 
                         {/* Busca - Sempre visível */}

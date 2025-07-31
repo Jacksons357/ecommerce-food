@@ -48,18 +48,21 @@ export const useCartStore = create<CartStore>()(
       addItem: (produto: Produto, quantidade = 1) => {
         console.log('Zustand addItem called:', { produto, quantidade });
         set((state) => {
+          console.log('Zustand current state before update:', state);
           const existingItem = state.items.find(item => item.produto_id === produto.id);
           
           if (existingItem) {
             console.log('Updating existing item quantity');
             // Atualizar quantidade se item já existe
-            return {
+            const newState = {
               items: state.items.map(item =>
                 item.produto_id === produto.id
                   ? { ...item, quantidade: item.quantidade + quantidade }
                   : item
               )
             };
+            console.log('Zustand new state after update:', newState);
+            return newState;
           } else {
             console.log('Adding new item to cart');
             // Adicionar novo item
@@ -71,10 +74,17 @@ export const useCartStore = create<CartStore>()(
               quantidade,
               imagem: produto.imagem,
             };
-            return { items: [...state.items, newItem] };
+            const newState = { items: [...state.items, newItem] };
+            console.log('Zustand new state after add:', newState);
+            return newState;
           }
         });
-        console.log('Zustand state updated');
+        
+        // Verificar se os dados foram persistidos
+        setTimeout(() => {
+          const currentState = get();
+          console.log('Zustand state after persistence check:', currentState);
+        }, 100);
       },
 
       removeItem: (itemId: number) => {
@@ -124,6 +134,12 @@ export const useCartStore = create<CartStore>()(
     {
       name: 'cart-storage', // nome da chave no localStorage
       partialize: (state) => ({ items: state.items }), // só persistir items
+      onRehydrateStorage: () => (state) => {
+        console.log('Zustand rehydrated:', state);
+        if (state) {
+          console.log('Zustand rehydrated items:', state.items);
+        }
+      },
     }
   )
 ); 
