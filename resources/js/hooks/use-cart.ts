@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCartStore, type CartItem, type Produto } from '@/stores/cart-store';
-import { getCSRFToken } from '@/lib/csrf';
+import { getCSRFToken, refreshCSRFToken } from '@/lib/csrf';
 import { usePage } from '@inertiajs/react';
 import type { SharedData } from '@/types';
 
@@ -27,6 +27,17 @@ interface CartResponse {
     total: number;
     quantidade_total: number;
   };
+  // Formato alternativo direto
+  items?: Array<{
+    id: number;
+    produto_id: number;
+    nome: string;
+    preco: number;
+    quantidade: number;
+    imagem?: string;
+  }>;
+  count?: number;
+  total?: number;
 }
 
 interface SyncResponse {
@@ -129,20 +140,65 @@ const clearCart = async (): Promise<CartResponse> => {
 };
 
 const syncCart = async (items: CartItem[]): Promise<SyncResponse> => {
-  const response = await fetch('/carrinho/sincronizar', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-CSRF-TOKEN': getCSRFToken(),
-    },
-    body: JSON.stringify({ items }),
-  });
+  console.log('syncCart called with items:', items);
   
-  if (!response.ok) {
-    throw new Error('Erro ao sincronizar carrinho');
+  const maxRetries = 3;
+  let lastError: Error | null = null;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`syncCart attempt ${attempt}/${maxRetries}`);
+      
+      // Recarregar o token CSRF a cada tentativa
+      let csrfToken = getCSRFToken();
+      if (!csrfToken || attempt > 1) {
+        console.warn('Recarregando token CSRF...');
+        csrfToken = await refreshCSRFToken();
+      }
+      
+      const response = await fetch('/carrinho/sincronizar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        body: JSON.stringify({ items }),
+        credentials: 'same-origin',
+      });
+      
+      console.log(`syncCart attempt ${attempt} response status:`, response.status);
+      
+      if (response.status === 419) {
+        console.warn('CSRF token expirado, recarregando...');
+        await refreshCSRFToken();
+        // Aguardar um pouco antes da próxima tentativa
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        continue;
+      }
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`syncCart attempt ${attempt} error response:`, errorText);
+        throw new Error(`Erro ao sincronizar carrinho: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log(`syncCart attempt ${attempt} success response:`, data);
+      return data;
+      
+    } catch (error) {
+      console.error(`syncCart attempt ${attempt} failed:`, error);
+      lastError = error as Error;
+      
+      if (attempt < maxRetries) {
+        // Aguardar antes da próxima tentativa (backoff exponencial)
+        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+      }
+    }
   }
   
-  return response.json();
+  console.error('syncCart failed after all attempts:', lastError);
+  throw lastError || new Error('Falha na sincronização após múltiplas tentativas');
 };
 
 // Hooks
@@ -212,6 +268,8 @@ export function useCart() {
     mutationFn: clearCart,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      // Limpar cache imediatamente
+      queryClient.setQueryData(cartKeys.details(), { items: [], count: 0, total: 0 });
     },
   });
 
@@ -235,6 +293,60 @@ export function useCart() {
     },
   });
 
+  // Mutation para finalizar pedido
+  const finalizarPedidoMutation = useMutation({
+    mutationFn: async (data: { observacoes: string }) => {
+      // Verificar se há itens locais que precisam ser adicionados ao servidor
+      const localItems = useCartStore.getState().items;
+      if (isAuthenticated && !isAdmin && localItems.length > 0) {
+        console.log('Adicionando itens locais ao servidor antes de finalizar...');
+        
+        // Adicionar cada item individualmente ao servidor
+        for (const item of localItems) {
+          try {
+            await addItemMutation.mutateAsync({ 
+              produto_id: item.produto_id, 
+              quantidade: item.quantidade 
+            });
+            console.log(`Item ${item.nome} adicionado ao servidor`);
+          } catch (error) {
+            console.error(`Erro ao adicionar item ${item.nome}:`, error);
+            // Continuar mesmo com erro
+          }
+        }
+        
+        // Aguardar um pouco para garantir que os itens foram processados
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+
+      // Recarregar token CSRF antes de finalizar
+      const csrfToken = await refreshCSRFToken();
+      
+      const response = await fetch('/pedidos/finalizar', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': csrfToken,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Erro ao finalizar pedido' }));
+        throw new Error(errorData.message || `Erro ${response.status}`);
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      // Limpar cache imediatamente
+      queryClient.setQueryData(cartKeys.details(), { items: [], count: 0, total: 0 });
+      queryClient.invalidateQueries({ queryKey: cartKeys.all });
+      // Limpar localStorage também
+      clearLocalCart();
+    },
+  });
+
   // Determinar quais itens mostrar
   let items: CartItem[] = [];
   
@@ -247,9 +359,13 @@ export function useCart() {
   if (!isAuthenticated || isAdmin) {
     console.log('useCart - Using local items (not authenticated or admin)');
     items = localItems;
+  } else if (serverCart?.items && serverCart.items.length > 0) {
+    // Para usuários autenticados (clientes), usar itens do servidor (formato direto da API)
+    console.log('useCart - Using server items (direct format from API)');
+    items = serverCart.items;
   } else if (serverCart?.carrinho?.items && serverCart.carrinho.items.length > 0) {
-    // Para usuários autenticados (clientes), usar itens do servidor se disponíveis
-    console.log('useCart - Using server items (authenticated client)');
+    // Fallback para formato carrinho wrapper (se existir)
+    console.log('useCart - Using server items (carrinho wrapper format)');
     items = serverCart.carrinho.items.map(item => ({
       id: item.id,
       produto_id: item.produto_id,
@@ -268,7 +384,8 @@ export function useCart() {
 
   const isLoading = isLoadingServer || addItemMutation.isPending || 
                    updateQuantityMutation.isPending || removeItemMutation.isPending || 
-                   clearCartMutation.isPending || syncCartMutation.isPending;
+                   clearCartMutation.isPending || syncCartMutation.isPending || 
+                   finalizarPedidoMutation.isPending;
 
   // Funções para manipular carrinho
   const addToCart = async (produto: Produto, quantidade = 1) => {
@@ -317,8 +434,24 @@ export function useCart() {
   };
 
   const syncLocalCart = async () => {
+    console.log('syncLocalCart called:', { isAuthenticated, isAdmin, localItemsLength: localItems.length });
+    
     if (isAuthenticated && !isAdmin && localItems.length > 0) {
-      await syncCartMutation.mutateAsync(localItems);
+      console.log('syncLocalCart - Starting sync with items:', localItems);
+      try {
+        await syncCartMutation.mutateAsync(localItems);
+        console.log('syncLocalCart - Sync completed successfully');
+        // Limpar localStorage apenas após sincronização bem-sucedida
+        useCartStore.getState().clearCart();
+        return true;
+      } catch (error) {
+        console.error('syncLocalCart - Sync failed:', error);
+        // Não limpar localStorage em caso de erro para não perder os dados
+        return false;
+      }
+    } else {
+      console.log('syncLocalCart - Skipping sync (conditions not met)');
+      return true; // Considerar sucesso quando não há necessidade de sincronizar
     }
   };
 
@@ -348,6 +481,7 @@ export function useCart() {
     removeItemMutation,
     clearCartMutation,
     syncCartMutation,
+    finalizarPedidoMutation,
     
     // Errors
     error: serverError,

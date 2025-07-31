@@ -6,7 +6,9 @@ use App\Models\Carrinho;
 use App\Models\CarrinhoItem;
 use App\Models\Produto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class CarrinhoController extends Controller
@@ -16,7 +18,7 @@ class CarrinhoController extends Controller
      */
     public function index()
     {
-        $usuario = auth()->user();
+        $usuario = Auth::user();
         $carrinho = $usuario->carrinho;
 
         if (! $carrinho) {
@@ -35,20 +37,20 @@ class CarrinhoController extends Controller
      */
     public function adicionar(Request $request)
     {
-        \Log::info('CarrinhoController@adicionar - Iniciando requisição');
-        \Log::info('Request data:', $request->all());
+        Log::info('CarrinhoController@adicionar - Iniciando requisição');
+        Log::info('Request data:', $request->all());
 
         $request->validate([
             'produto_id' => 'required|exists:produtos,id',
             'quantidade' => 'required|integer|min:1',
         ]);
 
-        $usuario = auth()->user();
-        \Log::info('Usuário: ' . ($usuario ? $usuario->name : 'Não autenticado'));
+        $usuario = Auth::user();
+        Log::info('Usuário: ' . ($usuario ? $usuario->name : 'Não autenticado'));
 
         // Verifica se o usuário é admin
         if ($usuario && $usuario->isAdmin()) {
-            \Log::info('Admin tentou adicionar produto ao carrinho');
+            Log::info('Admin tentou adicionar produto ao carrinho');
             return response()->json([
                 'success' => false,
                 'message' => 'Administradores não podem adicionar produtos ao carrinho',
@@ -111,7 +113,7 @@ class CarrinhoController extends Controller
             'quantidade' => 'required|integer|min:1',
         ]);
 
-        $usuario = auth()->user();
+        $usuario = Auth::user();
 
         // Verifica se o item pertence ao usuário
         if ($item->carrinho->usuario_id !== $usuario->id) {
@@ -140,7 +142,7 @@ class CarrinhoController extends Controller
      */
     public function removerItem(CarrinhoItem $item)
     {
-        $usuario = auth()->user();
+        $usuario = Auth::user();
 
         // Verifica se o item pertence ao usuário
         if ($item->carrinho->usuario_id !== $usuario->id) {
@@ -170,7 +172,7 @@ class CarrinhoController extends Controller
      */
     public function limpar()
     {
-        $usuario = auth()->user();
+        $usuario = Auth::user();
         $carrinho = $usuario->carrinho;
 
         if ($carrinho) {
@@ -192,47 +194,73 @@ class CarrinhoController extends Controller
      */
     public function sincronizar(Request $request)
     {
-        $request->validate([
-            'items' => 'required|array',
-            'items.*.produto_id' => 'required|exists:produtos,id',
-            'items.*.quantidade' => 'required|integer|min:1',
-        ]);
+        Log::info('CarrinhoController@sincronizar - Iniciando requisição');
+        Log::info('Request data:', $request->all());
 
-        $usuario = auth()->user();
+        try {
+            $request->validate([
+                'items' => 'required|array',
+                'items.*.produto_id' => 'required|exists:produtos,id',
+                'items.*.quantidade' => 'required|integer|min:1',
+            ]);
 
-        // Busca ou cria carrinho
-        $carrinho = $usuario->carrinho;
-        if (! $carrinho) {
-            $carrinho = Carrinho::create(['usuario_id' => $usuario->id]);
-        }
+            $usuario = Auth::user();
+            Log::info('Usuário autenticado:', ['id' => $usuario->id, 'name' => $usuario->name]);
 
-        // Limpa carrinho atual
-        $carrinho->items()->delete();
-
-        // Adiciona itens do localStorage
-        foreach ($request->items as $item) {
-            $produto = Produto::findOrFail($item['produto_id']);
-
-            if ($produto->ativo) {
-                CarrinhoItem::create([
-                    'carrinho_id' => $carrinho->id,
-                    'produto_id' => $produto->id,
-                    'quantidade' => $item['quantidade'],
-                    'preco_unitario' => $produto->preco,
-                ]);
+            // Busca ou cria carrinho
+            $carrinho = $usuario->carrinho;
+            if (! $carrinho) {
+                Log::info('Criando novo carrinho para usuário');
+                $carrinho = Carrinho::create(['usuario_id' => $usuario->id]);
+            } else {
+                Log::info('Carrinho existente encontrado:', ['id' => $carrinho->id]);
             }
+
+            // Limpa carrinho atual
+            Log::info('Limpando carrinho atual');
+            $carrinho->items()->delete();
+
+            // Adiciona itens do localStorage
+            Log::info('Adicionando itens do localStorage:', $request->items);
+            foreach ($request->items as $item) {
+                $produto = Produto::findOrFail($item['produto_id']);
+
+                if ($produto->ativo) {
+                    CarrinhoItem::create([
+                        'carrinho_id' => $carrinho->id,
+                        'produto_id' => $produto->id,
+                        'quantidade' => $item['quantidade'],
+                        'preco_unitario' => $produto->preco,
+                    ]);
+                    Log::info('Item adicionado:', ['produto_id' => $produto->id, 'quantidade' => $item['quantidade']]);
+                } else {
+                    Log::warning('Produto inativo ignorado:', ['produto_id' => $produto->id]);
+                }
+            }
+
+            // Invalidar cache do carrinho
+            $cacheKey = "cart_data_{$usuario->id}";
+            Cache::forget($cacheKey);
+            Log::info('Cache invalidado');
+
+            $carrinho->load('items.produto');
+            Log::info('Carrinho sincronizado com sucesso');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Carrinho sincronizado com sucesso!',
+                'carrinho' => $carrinho,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erro na sincronização do carrinho:', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Erro ao sincronizar carrinho: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // Invalidar cache do carrinho
-        $cacheKey = "cart_data_{$usuario->id}";
-        Cache::forget($cacheKey);
-
-        $carrinho->load('items.produto');
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Carrinho sincronizado com sucesso!',
-            'carrinho' => $carrinho,
-        ]);
     }
 }

@@ -1,7 +1,6 @@
 <?php
 
 use App\Http\Controllers\CarrinhoController;
-use App\Http\Controllers\CarrinhoPublicoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\ProdutoController;
@@ -45,6 +44,13 @@ Route::get('/api/cart-count', function () {
 
     return response()->json(['count' => $count]);
 })->name('api.cart-count');
+
+// API para recarregar token CSRF
+Route::get('/api/csrf-token', function () {
+    return response()->json([
+        'token' => csrf_token(),
+    ]);
+})->name('api.csrf-token');
 
 // API para dados completos do carrinho
 Route::get('/api/cart-data', function () {
@@ -98,12 +104,10 @@ Route::get('/api/cart-data', function () {
     return response()->json($data);
 })->name('api.cart-data');
 
-// Rotas públicas do carrinho (localStorage)
-Route::prefix('carrinho-publico')->name('carrinho-publico.')->group(function () {
-    Route::get('/', [CarrinhoPublicoController::class, 'index'])->name('index');
-    Route::post('/adicionar', [CarrinhoPublicoController::class, 'adicionar'])->name('adicionar');
-    Route::get('/produto/{id}', [CarrinhoPublicoController::class, 'produto'])->name('produto');
-});
+// Rota única do carrinho (funciona para autenticados e não autenticados)
+Route::get('/carrinho', function () {
+    return Inertia::render('Carrinho/Index');
+})->name('carrinho.index');
 
 // Rotas autenticadas
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -141,9 +145,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
     })->name('dashboard');
 
-    // Carrinho - Temporariamente sem middleware para debug
+    // Carrinho - Acessível para usuários autenticados (clientes e admins podem ver, mas só clientes podem usar)
     Route::prefix('carrinho')->name('carrinho.')->group(function () {
-        Route::get('/', [CarrinhoController::class, 'index'])->name('index');
         Route::post('/adicionar', [CarrinhoController::class, 'adicionar'])->name('adicionar');
         Route::put('/quantidade/{item}', [CarrinhoController::class, 'atualizarQuantidade'])->name('quantidade');
         Route::delete('/item/{item}', [CarrinhoController::class, 'removerItem'])->name('remover-item');

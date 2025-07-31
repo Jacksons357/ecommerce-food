@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { refreshCSRFToken } from '@/lib/csrf';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
@@ -48,70 +49,166 @@ export default function AdminProdutosIndex({ produtos }: Props) {
     );
 
     const toggleDestaque = async (produtoId: number) => {
-        try {
-            const response = await fetch(`/admin/produtos/${produtoId}/destaque`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-            });
+        const maxRetries = 3;
+        let lastError: Error | null = null;
 
-            if (response.ok) {
-                // Atualiza localmente sem recarregar a página
-                setLocalProdutos((prevProdutos) =>
-                    prevProdutos.map((produto) => (produto.id === produtoId ? { ...produto, destaque_dia: !produto.destaque_dia } : produto)),
-                );
-
-                toast({
-                    title: 'Destaque atualizado',
-                    description: 'O destaque do produto foi alterado com sucesso.',
-                    variant: 'success',
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`Toggle attempt ${attempt}/${maxRetries}`);
+                
+                // Recarregar token CSRF a cada tentativa
+                let csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (!csrfToken || attempt > 1) {
+                    console.log('Recarregando token CSRF...');
+                    csrfToken = await refreshCSRFToken();
+                }
+                
+                console.log('CSRF Token for toggle:', csrfToken);
+                
+                const response = await fetch(`/admin/produtos/${produtoId}/destaque`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken || '',
+                    },
+                    credentials: 'same-origin',
                 });
+
+                console.log(`Toggle attempt ${attempt} response status:`, response.status);
+
+                if (response.status === 419) {
+                    console.warn('CSRF token expirado, recarregando...');
+                    await refreshCSRFToken();
+                    if (attempt < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                        continue;
+                    }
+                }
+
+                if (response.ok) {
+                    // Atualiza localmente sem recarregar a página
+                    setLocalProdutos((prevProdutos) =>
+                        prevProdutos.map((produto) => (produto.id === produtoId ? { ...produto, destaque_dia: !produto.destaque_dia } : produto)),
+                    );
+
+                    toast({
+                        title: 'Destaque atualizado',
+                        description: 'O destaque do produto foi alterado com sucesso.',
+                        variant: 'success',
+                    });
+                    return; // Sucesso, sair do loop
+                } else {
+                    // Tentar ler resposta como JSON, se falhar, mostrar texto
+                    try {
+                        const errorData = await response.json();
+                        lastError = new Error(errorData.message || `Erro ${response.status}: Erro ao alterar destaque`);
+                    } catch {
+                        const errorText = await response.text();
+                        console.error('Error response text:', errorText);
+                        lastError = new Error(`Erro ${response.status}: Erro ao alterar destaque`);
+                    }
+                }
+            } catch (error) {
+                console.error(`Toggle attempt ${attempt} failed:`, error);
+                lastError = error as Error;
             }
-        } catch (error) {
-            console.error('Erro ao alterar destaque:', error);
-            toast({
-                title: 'Erro',
-                description: 'Erro ao alterar o destaque do produto.',
-                variant: 'destructive',
-            });
+
+            if (attempt < maxRetries) {
+                // Aguardar antes da próxima tentativa (backoff exponencial)
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
         }
+
+        // Se chegou aqui, todas as tentativas falharam
+        console.error('Toggle failed after all attempts:', lastError);
+        toast({
+            title: 'Erro',
+            description: lastError?.message || 'Erro de conexão ao alterar o destaque. Verifique sua conexão e tente novamente.',
+            variant: 'destructive',
+        });
     };
 
     const deletarProduto = async (produto: Produto) => {
         setIsDeleting(produto.id);
 
-        try {
-            const response = await fetch(`/admin/produtos/${produto.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                    Accept: 'application/json',
-                    'Content-Type': 'application/json',
-                },
-            });
+        const maxRetries = 3;
+        let lastError: Error | null = null;
 
-            if (response.ok) {
-                // Remove o produto da lista local sem recarregar a página
-                setLocalProdutos((prevProdutos) => prevProdutos.filter((p) => p.id !== produto.id));
-
-                toast({
-                    title: 'Produto excluído',
-                    description: `O produto "${produto.nome}" foi excluído com sucesso.`,
-                    variant: 'success',
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+                console.log(`Delete attempt ${attempt}/${maxRetries}`);
+                
+                // Recarregar token CSRF a cada tentativa
+                let csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                if (!csrfToken || attempt > 1) {
+                    console.log('Recarregando token CSRF...');
+                    csrfToken = await refreshCSRFToken();
+                }
+                
+                console.log('CSRF Token for delete:', csrfToken);
+                
+                const response = await fetch(`/admin/produtos/${produto.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken || '',
+                        Accept: 'application/json',
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'same-origin',
                 });
+
+                console.log(`Delete attempt ${attempt} response status:`, response.status);
+
+                if (response.status === 419) {
+                    console.warn('CSRF token expirado, recarregando...');
+                    await refreshCSRFToken();
+                    if (attempt < maxRetries) {
+                        await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                        continue;
+                    }
+                }
+
+                if (response.ok) {
+                    // Remove o produto da lista local sem recarregar a página
+                    setLocalProdutos((prevProdutos) => prevProdutos.filter((p) => p.id !== produto.id));
+
+                    toast({
+                        title: 'Produto excluído',
+                        description: `O produto "${produto.nome}" foi excluído com sucesso.`,
+                        variant: 'success',
+                    });
+                    return; // Sucesso, sair do loop
+                } else {
+                    // Tentar ler resposta como JSON, se falhar, mostrar texto
+                    try {
+                        const errorData = await response.json();
+                        lastError = new Error(errorData.message || `Erro ${response.status}: Erro ao excluir produto`);
+                    } catch {
+                        const errorText = await response.text();
+                        console.error('Error response text:', errorText);
+                        lastError = new Error(`Erro ${response.status}: Erro ao excluir produto`);
+                    }
+                }
+            } catch (error) {
+                console.error(`Delete attempt ${attempt} failed:`, error);
+                lastError = error as Error;
             }
-        } catch (error) {
-            console.error('Erro ao deletar produto:', error);
-            toast({
-                title: 'Erro',
-                description: 'Erro ao excluir o produto.',
-                variant: 'destructive',
-            });
-        } finally {
-            setIsDeleting(null);
+
+            if (attempt < maxRetries) {
+                // Aguardar antes da próxima tentativa (backoff exponencial)
+                await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+            }
         }
+
+        // Se chegou aqui, todas as tentativas falharam
+        console.error('Delete failed after all attempts:', lastError);
+        toast({
+            title: 'Erro',
+            description: lastError?.message || 'Erro de conexão ao excluir o produto. Verifique sua conexão e tente novamente.',
+            variant: 'destructive',
+        });
+        
+        setIsDeleting(null);
     };
 
     return (

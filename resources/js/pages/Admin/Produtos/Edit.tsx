@@ -123,14 +123,20 @@ export default function AdminProdutosEdit({ produto }: Props) {
                 formDataToSend.append('imagem', formData.imagem);
             }
 
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            console.log('CSRF Token for update:', csrfToken);
+            
             const response = await fetch(`/admin/produtos/${produto.id}`, {
                 method: 'POST',
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-CSRF-TOKEN': csrfToken || '',
                     Accept: 'application/json',
                 },
+                credentials: 'same-origin',
                 body: formDataToSend,
             });
+
+            console.log('Update response status:', response.status);
 
             if (response.ok) {
                 toast({
@@ -140,18 +146,40 @@ export default function AdminProdutosEdit({ produto }: Props) {
                 });
                 router.visit('/admin/produtos');
             } else {
-                const errorData = await response.json();
-                toast({
-                    title: 'Erro ao atualizar produto',
-                    description: errorData.message || 'Erro ao atualizar produto',
-                    variant: 'destructive',
-                });
+                // Verificar se é erro 419 (CSRF)
+                if (response.status === 419) {
+                    toast({
+                        title: 'Erro de autenticação',
+                        description: 'Por favor, recarregue a página e tente novamente.',
+                        variant: 'destructive',
+                    });
+                    window.location.reload();
+                    return;
+                }
+                
+                // Tentar ler resposta como JSON, se falhar, mostrar texto
+                try {
+                    const errorData = await response.json();
+                    toast({
+                        title: 'Erro ao atualizar produto',
+                        description: errorData.message || `Erro ${response.status}: Erro ao atualizar produto`,
+                        variant: 'destructive',
+                    });
+                } catch {
+                    const errorText = await response.text();
+                    console.error('Error response text:', errorText);
+                    toast({
+                        title: 'Erro ao atualizar produto',
+                        description: `Erro ${response.status}: Erro ao atualizar produto`,
+                        variant: 'destructive',
+                    });
+                }
             }
         } catch (error) {
             console.error('Erro ao atualizar produto:', error);
             toast({
                 title: 'Erro',
-                description: 'Erro ao atualizar produto',
+                description: 'Erro de conexão ao atualizar produto. Verifique sua conexão e tente novamente.',
                 variant: 'destructive',
             });
         } finally {

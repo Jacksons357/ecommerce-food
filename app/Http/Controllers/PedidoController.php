@@ -7,6 +7,8 @@ use App\Models\Pedido;
 use App\Models\PedidoItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 
 class PedidoController extends Controller
@@ -68,26 +70,42 @@ class PedidoController extends Controller
         try {
             DB::beginTransaction();
 
+            // Carrega os itens do carrinho com eager loading
+            $carrinho->load('items.produto');
+
+            // Calcula o total real
+            $total = $carrinho->items->sum(function ($item) {
+                return $item->preco_unitario * $item->quantidade;
+            });
+
             // Cria o pedido
             $pedido = Pedido::create([
                 'usuario_id' => $usuario->id,
-                'total' => $carrinho->total,
+                'total' => $total,
                 'observacoes' => $request->observacoes,
                 'status' => 'pendente',
             ]);
 
-            // Cria os itens do pedido
-            foreach ($carrinho->items as $item) {
-                PedidoItem::create([
+            // Cria os itens do pedido em lote
+            $pedidoItems = $carrinho->items->map(function ($item) use ($pedido) {
+                return [
                     'pedido_id' => $pedido->id,
                     'produto_id' => $item->produto_id,
                     'quantidade' => $item->quantidade,
                     'preco_unitario' => $item->preco_unitario,
-                ]);
-            }
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            })->toArray();
+
+            PedidoItem::insert($pedidoItems);
 
             // Limpa o carrinho
             $carrinho->items()->delete();
+
+            // Limpa o cache do carrinho
+            $cacheKey = "cart_data_{$usuario->id}";
+            Cache::forget($cacheKey);
 
             DB::commit();
 
@@ -98,6 +116,12 @@ class PedidoController extends Controller
             ]);
         } catch (\Exception $e) {
             DB::rollback();
+
+            Log::error('Erro ao finalizar pedido: ' . $e->getMessage(), [
+                'user_id' => $usuario->id,
+                'carrinho_id' => $carrinho->id ?? null,
+                'trace' => $e->getTraceAsString()
+            ]);
 
             return response()->json([
                 'success' => false,

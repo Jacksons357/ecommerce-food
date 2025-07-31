@@ -8,6 +8,38 @@ export function getCSRFToken(): string {
 }
 
 /**
+ * Recarrega o token CSRF fazendo uma requisição para obter um novo token
+ */
+export async function refreshCSRFToken(): Promise<string> {
+    try {
+        console.log('Recarregando token CSRF...');
+        const response = await fetch('/api/csrf-token', {
+            method: 'GET',
+            credentials: 'same-origin',
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            const newToken = data.token;
+            
+            // Atualizar o meta tag
+            const metaTag = document.querySelector('meta[name="csrf-token"]');
+            if (metaTag) {
+                metaTag.setAttribute('content', newToken);
+            }
+            
+            console.log('Token CSRF recarregado:', newToken);
+            return newToken;
+        }
+    } catch (error) {
+        console.error('Erro ao recarregar token CSRF:', error);
+    }
+    
+    // Fallback para o token atual
+    return getCSRFToken();
+}
+
+/**
  * Configura o token CSRF para todas as requisições fetch
  */
 export function setupCSRF() {

@@ -47,8 +47,8 @@ export function Navbar() {
 
                     {/* Ações do lado direito */}
                     <div className="flex items-center space-x-2 sm:space-x-4">
-                        {/* Carrinho - para todos os usuários */}
-                        <Link href={auth?.user ? '/carrinho' : '/carrinho-publico'} className="relative">
+                        {/* Carrinho - rota única */}
+                        <Link href="/carrinho" className="relative">
                             <Button
                                 variant="ghost"
                                 size="sm"
