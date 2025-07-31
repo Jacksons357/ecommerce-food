@@ -1,6 +1,6 @@
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
-import { FormEventHandler } from 'react';
+import { LoaderCircle, CheckCircle } from 'lucide-react';
+import { FormEventHandler, useState } from 'react';
 
 import InputError from '@/components/input-error';
 import TextLink from '@/components/text-link';
@@ -21,6 +21,9 @@ interface LoginProps {
 }
 
 export default function Login({ status, canResetPassword }: LoginProps) {
+    const [showSuccessSpinner, setShowSuccessSpinner] = useState(false);
+    const [successMessage, setSuccessMessage] = useState('');
+    
     const { data, setData, post, processing, errors, reset } = useForm<Required<LoginForm>>({
         email: '',
         password: '',
@@ -30,9 +33,55 @@ export default function Login({ status, canResetPassword }: LoginProps) {
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
         post(route('login'), {
+            onSuccess: () => {
+                setSuccessMessage('Login realizado com sucesso! Redirecionando...');
+                setShowSuccessSpinner(true);
+                
+                // Esconde o spinner após 5 segundos
+                setTimeout(() => {
+                    setShowSuccessSpinner(false);
+                    setSuccessMessage('');
+                }, 5000);
+            },
             onFinish: () => reset('password'),
         });
     };
+
+    // Se estiver mostrando o spinner de sucesso, renderiza apenas ele
+    if (showSuccessSpinner) {
+        return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 h-screen">
+                <div className="hidden lg:flex flex-col items-center justify-center bg-neutral-900">
+                    <img src="/images/logo_burguer.png" alt="Logo" className="" />
+                </div>
+
+                <div className='flex items-center justify-center p-6'>
+                    <div className="w-full max-w-sm">
+                        <div className="flex flex-col items-center gap-8">
+                            <div className="flex flex-col items-center gap-4">
+                                <div className="mb-1 flex h-9 w-9 items-center justify-center rounded-md">
+                                    <img src="/images/logo_burguer.png" alt="Logo" className="h-9 w-9" />
+                                </div>
+                            </div>
+
+                            <div className="text-center space-y-6">
+                                <div className="flex justify-center">
+                                    <div className="relative">
+                                        <CheckCircle className="h-16 w-16 text-green-500 animate-pulse" />
+                                        <LoaderCircle className="h-20 w-20 text-red-600 animate-spin absolute inset-0 m-auto" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-medium text-neutral-100 mb-2">Login Realizado!</h2>
+                                    <p className="text-sm text-neutral-300">{successMessage}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 h-screen">

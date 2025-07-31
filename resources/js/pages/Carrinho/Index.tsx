@@ -49,8 +49,6 @@ interface Carrinho {
   quantidade_total: number;
 }
 
-
-
 interface Props {
   carrinho?: Carrinho;
 }
@@ -202,35 +200,37 @@ export default function CarrinhoIndex({ carrinho }: Props) {
     <>
       <Head title="Carrinho" />
       
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-8">
-        <div className="container mx-auto px-4">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-4 sm:py-6 lg:py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             {/* Header */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="flex items-center justify-between mb-8"
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8"
             >
               <div className="flex items-center">
                 <Button
                   variant="ghost"
                   onClick={() => router.visit('/')}
-                  className="mr-4 text-orange-700 hover:text-orange-900 hover:bg-orange-100"
+                  className="mr-3 sm:mr-4 text-orange-700 hover:text-orange-900 hover:bg-orange-100"
                 >
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Voltar
+                  <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
+                  <span className="hidden sm:inline">Voltar</span>
                 </Button>
-                <h1 className="text-3xl font-bold text-orange-900">Carrinho</h1>
-                <Badge className="ml-3 bg-gradient-to-r from-orange-500 to-red-500 text-white border-0">
-                  {items.length} item{items.length !== 1 ? 's' : ''}
-                </Badge>
+                <div>
+                  <h1 className="text-2xl sm:text-3xl font-bold text-orange-900">Carrinho</h1>
+                  <Badge className="mt-1 sm:mt-2 bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 text-xs sm:text-sm">
+                    {items.length} item{items.length !== 1 ? 's' : ''}
+                  </Badge>
+                </div>
               </div>
               {items.length > 0 && (
                 <Button
                   variant="outline"
                   onClick={limparCarrinho}
-                  className="text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50"
+                  className="text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50 w-full sm:w-auto"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Limpar Carrinho
@@ -244,13 +244,13 @@ export default function CarrinhoIndex({ carrinho }: Props) {
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: 0.2 }}
               >
-                <Card className="text-center py-12 border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-xl">
+                <Card className="text-center py-8 sm:py-12 border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-xl">
                   <CardContent>
-                    <ShoppingCart className="h-16 w-16 text-orange-400 mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold text-orange-800 mb-2">
+                    <ShoppingCart className="h-12 w-12 sm:h-16 sm:w-16 text-orange-400 mx-auto mb-4" />
+                    <h3 className="text-lg sm:text-xl font-semibold text-orange-800 mb-2">
                       Seu carrinho está vazio
                     </h3>
-                    <p className="text-orange-600 mb-6">
+                    <p className="text-orange-600 mb-6 text-sm sm:text-base">
                       Adicione alguns produtos para começar suas compras
                     </p>
                     <Button
@@ -263,7 +263,7 @@ export default function CarrinhoIndex({ carrinho }: Props) {
                 </Card>
               </motion.div>
             ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
                 {/* Lista de Itens */}
                 <div className="lg:col-span-2">
                   <motion.div
@@ -273,9 +273,9 @@ export default function CarrinhoIndex({ carrinho }: Props) {
                   >
                     <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-xl">
                       <CardHeader className="bg-gradient-to-r from-orange-100 to-red-100 border-b border-orange-200">
-                        <CardTitle className="text-orange-800">Itens do Carrinho</CardTitle>
+                        <CardTitle className="text-orange-800 text-lg sm:text-xl">Itens do Carrinho</CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4 p-6">
+                      <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
                         {items.map((item, index) => (
                           <motion.div
                             key={item.id}
@@ -283,65 +283,67 @@ export default function CarrinhoIndex({ carrinho }: Props) {
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
                             whileHover={{ x: 5 }}
-                            className="flex items-center space-x-4 p-4 border-2 border-orange-200 rounded-lg bg-white shadow-md hover:shadow-lg transition-all duration-300"
+                            className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border-2 border-orange-200 rounded-lg bg-white shadow-md hover:shadow-lg transition-all duration-300"
                           >
                             <img
                               src={isCarrinhoItem(item) ? item.produto.imagem : item.imagem}
                               alt={isCarrinhoItem(item) ? item.produto.nome : item.nome}
-                              className="w-16 h-16 object-cover rounded-lg border-2 border-orange-200"
+                              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border-2 border-orange-200 flex-shrink-0"
                             />
                             
-                            <div className="flex-1">
-                              <h3 className="font-semibold text-lg text-orange-800">
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-base sm:text-lg text-orange-800 line-clamp-2">
                                 {isCarrinhoItem(item) ? item.produto.nome : item.nome}
                               </h3>
                               {isCarrinhoItem(item) && (
-                                <p className="text-orange-600 text-sm line-clamp-2">
+                                <p className="text-orange-600 text-sm line-clamp-2 mt-1">
                                   {item.produto.descricao}
                                 </p>
                               )}
-                              <p className="text-orange-600 font-semibold mt-1">
+                              <p className="text-orange-600 font-semibold mt-1 text-sm sm:text-base">
                                 R$ {(isCarrinhoItem(item) ? Number(item.preco_unitario) : Number(item.preco)).toFixed(2).replace('.', ',')}
                               </p>
                             </div>
 
-                            <div className="flex items-center space-x-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => atualizarQuantidade(item.id, item.quantidade - 1)}
-                                disabled={item.quantidade <= 1}
-                                className="border-orange-300 text-orange-600 hover:bg-orange-50"
-                              >
-                                <Minus className="h-4 w-4" />
-                              </Button>
-                              
-                              <span className="w-12 text-center font-semibold text-orange-800">
-                                {item.quantidade}
-                              </span>
-                              
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => atualizarQuantidade(item.id, item.quantidade + 1)}
-                                className="border-orange-300 text-orange-600 hover:bg-orange-50"
-                              >
-                                <Plus className="h-4 w-4" />
-                              </Button>
-                            </div>
+                            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
+                              <div className="flex items-center space-x-2">
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => atualizarQuantidade(item.id, item.quantidade - 1)}
+                                  disabled={item.quantidade <= 1}
+                                  className="border-orange-300 text-orange-600 hover:bg-orange-50 h-8 w-8 p-0"
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                
+                                <span className="w-8 sm:w-12 text-center font-semibold text-orange-800 text-sm sm:text-base">
+                                  {item.quantidade}
+                                </span>
+                                
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => atualizarQuantidade(item.id, item.quantidade + 1)}
+                                  className="border-orange-300 text-orange-600 hover:bg-orange-50 h-8 w-8 p-0"
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
 
-                            <div className="text-right">
-                              <p className="font-bold text-lg text-orange-600">
-                                R$ {(item.quantidade * (isCarrinhoItem(item) ? item.preco_unitario : Number(item.preco))).toFixed(2).replace('.', ',')}
-                              </p>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => removerItem(item.id)}
-                                className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-1"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <div className="text-right">
+                                <p className="font-bold text-base sm:text-lg text-orange-600">
+                                  R$ {(item.quantidade * (isCarrinhoItem(item) ? item.preco_unitario : Number(item.preco))).toFixed(2).replace('.', ',')}
+                                </p>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => removerItem(item.id)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-1 h-8 w-8 p-0"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              </div>
                             </div>
                           </motion.div>
                         ))}
@@ -356,32 +358,32 @@ export default function CarrinhoIndex({ carrinho }: Props) {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.2 }}
-                    className="sticky top-8"
+                    className="sticky top-4 sm:top-8"
                   >
                     <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-xl">
                       <CardHeader className="bg-gradient-to-r from-orange-100 to-red-100 border-b border-orange-200">
-                        <CardTitle className="flex items-center text-orange-800">
-                          <CreditCard className="h-5 w-5 mr-2" />
+                        <CardTitle className="flex items-center text-orange-800 text-lg sm:text-xl">
+                          <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                           Resumo do Pedido
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4 p-6">
+                      <CardContent className="space-y-4 p-4 sm:p-6">
                         {/* Detalhes do Pedido */}
                         <div className="space-y-3">
                           <div className="flex justify-between items-center py-2">
-                            <span className="text-orange-600">Subtotal ({quantidadeTotal} itens):</span>
-                            <span className="font-semibold text-orange-800">
+                            <span className="text-orange-600 text-sm sm:text-base">Subtotal ({quantidadeTotal} itens):</span>
+                            <span className="font-semibold text-orange-800 text-sm sm:text-base">
                               R$ {Number(total).toFixed(2).replace('.', ',')}
                             </span>
                           </div>
                           <div className="flex justify-between items-center py-2">
-                            <span className="text-orange-600">Taxa de entrega:</span>
-                            <Badge className="bg-green-500/20 text-green-600 border-green-500/30">Grátis</Badge>
+                            <span className="text-orange-600 text-sm sm:text-base">Taxa de entrega:</span>
+                            <Badge className="bg-green-500/20 text-green-600 border-green-500/30 text-xs sm:text-sm">Grátis</Badge>
                           </div>
                           <hr className="border-orange-200" />
                           <div className="flex justify-between items-center">
-                            <span className="text-lg font-bold text-orange-800">Total:</span>
-                            <span className="text-2xl font-bold text-orange-600">
+                            <span className="text-base sm:text-lg font-bold text-orange-800">Total:</span>
+                            <span className="text-xl sm:text-2xl font-bold text-orange-600">
                               R$ {Number(total).toFixed(2).replace('.', ',')}
                             </span>
                           </div>
@@ -396,7 +398,7 @@ export default function CarrinhoIndex({ carrinho }: Props) {
                               value={observacoes}
                               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setObservacoes(e.target.value)}
                               rows={3}
-                              className="bg-white border-orange-300 text-orange-800 focus:border-orange-500 focus:ring-orange-500"
+                              className="bg-white border-orange-300 text-orange-800 focus:border-orange-500 focus:ring-orange-500 text-sm"
                             />
                           </div>
                         )}
@@ -411,12 +413,12 @@ export default function CarrinhoIndex({ carrinho }: Props) {
                           >
                             {isFinalizando ? (
                               <>
-                                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
                                 Finalizando...
                               </>
                             ) : (
                               <>
-                                <CreditCard className="h-5 w-5 mr-2" />
+                                <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                                 Finalizar Pedido
                               </>
                             )}
@@ -427,7 +429,7 @@ export default function CarrinhoIndex({ carrinho }: Props) {
                             className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transition-all duration-300 text-white font-semibold py-3"
                             size="lg"
                           >
-                            <LogIn className="h-5 w-5 mr-2" />
+                            <LogIn className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
                             Fazer Login para Finalizar
                           </Button>
                         )}
@@ -442,14 +444,14 @@ export default function CarrinhoIndex({ carrinho }: Props) {
                         </Button>
 
                         {/* Informações Adicionais */}
-                        <div className="bg-blue-500/10 rounded-lg border border-blue-500/20 p-4">
-                          <div className="flex items-start gap-3">
-                            <Clock className="h-5 w-5 text-blue-400 mt-0.5 flex-shrink-0" />
+                        <div className="bg-blue-500/10 rounded-lg border border-blue-500/20 p-3 sm:p-4">
+                          <div className="flex items-start gap-2 sm:gap-3">
+                            <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400 mt-0.5 flex-shrink-0" />
                             <div>
-                              <p className="text-sm font-medium text-blue-600 mb-1">
+                              <p className="text-xs sm:text-sm font-medium text-blue-600 mb-1">
                                 {auth?.user ? 'Pedido em Preparação' : 'Login Necessário'}
                               </p>
-                              <p className="text-sm text-blue-600">
+                              <p className="text-xs sm:text-sm text-blue-600">
                                 {auth?.user 
                                   ? 'Seu pedido será preparado assim que confirmarmos o pagamento.'
                                   : 'Faça login para finalizar seu pedido e acompanhar o status.'

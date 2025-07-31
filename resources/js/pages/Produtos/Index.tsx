@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ShoppingCart, Star, Search, Grid, List } from 'lucide-react';
+import { ShoppingCart, Star, Search, Grid, List, Filter } from 'lucide-react';
 import AppLayout from '@/layouts/app-layout';
 import { useCart } from '@/hooks/use-cart-store';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +31,7 @@ export default function ProdutosIndex({ produtos }: Props) {
   const [sortBy, setSortBy] = useState('nome');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState('todos');
+  const [showFilters, setShowFilters] = useState(false);
   const { addToCart, isLoading } = useCart();
   const { toast } = useToast();
 
@@ -80,33 +81,33 @@ export default function ProdutosIndex({ produtos }: Props) {
     <AppLayout>
       <Head title="Produtos" />
       
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-8">
-        <div className="container mx-auto px-4">
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-4 sm:py-6 lg:py-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
+            className="mb-6 sm:mb-8"
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
               <div>
-                <h1 className="text-3xl font-bold text-gray-800">Nosso Cardápio</h1>
-                <p className="text-gray-600 mt-1">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Nosso Cardápio</h1>
+                <p className="text-gray-600 mt-1 text-sm sm:text-base">
                   Descubra nossos deliciosos produtos preparados com ingredientes frescos
                 </p>
               </div>
               
               <Button 
                 onClick={() => router.visit('/carrinho')}
-                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transition-all duration-300 text-white font-semibold cursor-pointer"
+                className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transition-all duration-300 text-white font-semibold cursor-pointer w-full sm:w-auto"
               >
                 <ShoppingCart className="h-4 w-4 mr-2" />
                 Ver Carrinho
               </Button>
             </div>
 
-            {/* Filtros e Busca */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            {/* Busca - Sempre visível */}
+            <div className="mb-4">
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
                 <Input
@@ -116,32 +117,21 @@ export default function ProdutosIndex({ produtos }: Props) {
                   className="pl-10 bg-white border-orange-200 text-gray-800 focus:border-orange-500 focus:ring-orange-500"
                 />
               </div>
-              
-              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-                <SelectTrigger className="bg-white border-orange-200 text-gray-800 focus:border-orange-500 focus:ring-orange-500">
-                  <SelectValue placeholder="Categoria" />
-                </SelectTrigger>
-                <SelectContent>
-                  {categorias.map(categoria => (
-                    <SelectItem key={categoria} value={categoria}>
-                      {categoria === 'todos' ? 'Todas as Categorias' : categoria}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="bg-white border-orange-200 text-gray-800 focus:border-orange-500 focus:ring-orange-500">
-                  <SelectValue placeholder="Ordenar por" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="nome">Nome</SelectItem>
-                  <SelectItem value="preco_menor">Menor Preço</SelectItem>
-                  <SelectItem value="preco_maior">Maior Preço</SelectItem>
-                  <SelectItem value="destaque">Destaques</SelectItem>
-                </SelectContent>
-              </Select>
-              
+            </div>
+
+            {/* Filtros - Botão toggle para mobile */}
+            <div className="flex items-center justify-between mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowFilters(!showFilters)}
+                className="md:hidden border-orange-200 text-gray-700 hover:bg-orange-50"
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros
+              </Button>
+
+              {/* Controles de visualização - Sempre visíveis */}
               <div className="flex items-center space-x-2">
                 <Button
                   variant={viewMode === 'grid' ? 'default' : 'outline'}
@@ -161,18 +151,48 @@ export default function ProdutosIndex({ produtos }: Props) {
                 </Button>
               </div>
             </div>
+
+            {/* Filtros - Desktop sempre visível, mobile toggle */}
+            <div className={`${showFilters ? 'block' : 'hidden'} md:block`}>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                  <SelectTrigger className="bg-white border-orange-200 text-gray-800 focus:border-orange-500 focus:ring-orange-500">
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {categorias.map(categoria => (
+                      <SelectItem key={categoria} value={categoria}>
+                        {categoria === 'todos' ? 'Todas as Categorias' : categoria}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="bg-white border-orange-200 text-gray-800 focus:border-orange-500 focus:ring-orange-500">
+                    <SelectValue placeholder="Ordenar por" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="nome">Nome</SelectItem>
+                    <SelectItem value="preco_menor">Menor Preço</SelectItem>
+                    <SelectItem value="preco_maior">Maior Preço</SelectItem>
+                    <SelectItem value="destaque">Destaques</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
           </motion.div>
 
           {/* Resultados */}
           <div className="mb-4">
-            <p className="text-gray-600">
+            <p className="text-gray-600 text-sm sm:text-base">
               {filteredProdutos.length} produto{filteredProdutos.length !== 1 ? 's' : ''} encontrado{filteredProdutos.length !== 1 ? 's' : ''}
             </p>
           </div>
 
           {/* Grid de Produtos */}
           {viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
               {filteredProdutos.map((produto, index) => (
                 <motion.div
                   key={produto.id}
@@ -186,33 +206,34 @@ export default function ProdutosIndex({ produtos }: Props) {
                       <img
                         src={produto.imagem}
                         alt={produto.nome}
-                        className="w-full h-48 object-cover"
+                        className="w-full h-32 sm:h-40 md:h-48 object-cover"
                         loading="lazy"
                       />
                       {produto.destaque_dia && (
-                        <Badge className="absolute top-3 right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white border-0">
-                          <Star className="h-4 w-4 mr-1" />
-                          Destaque
+                        <Badge className="absolute top-2 sm:top-3 right-2 sm:right-3 bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 text-xs sm:text-sm">
+                          <Star className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                          <span className="hidden sm:inline">Destaque</span>
+                          <span className="sm:hidden">★</span>
                         </Badge>
                       )}
                       <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent"></div>
                     </div>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-lg text-gray-800">{produto.nome}</CardTitle>
+                    <CardHeader className="pb-2 px-3 sm:px-4">
+                      <CardTitle className="text-base sm:text-lg text-gray-800 line-clamp-2">{produto.nome}</CardTitle>
                     </CardHeader>
-                    <CardContent className="pt-0">
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+                    <CardContent className="pt-0 px-3 sm:px-4 pb-3 sm:pb-4">
+                      <p className="text-gray-600 text-sm mb-3 sm:mb-4 line-clamp-2">
                         {produto.descricao}
                       </p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xl font-bold text-orange-600">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                        <span className="text-lg sm:text-xl font-bold text-orange-600">
                           R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
                         </span>
                         <Button
                           size="sm"
                           onClick={() => adicionarAoCarrinho(produto)}
                           disabled={isLoading}
-                          className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transition-all duration-300 text-white font-semibold cursor-pointer"
+                          className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transition-all duration-300 text-white font-semibold cursor-pointer w-full sm:w-auto"
                         >
                           <ShoppingCart className="h-4 w-4 mr-1" />
                           {isLoading ? 'Adicionando...' : 'Adicionar'}
@@ -225,7 +246,7 @@ export default function ProdutosIndex({ produtos }: Props) {
             </div>
           ) : (
             /* Lista de Produtos */
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {filteredProdutos.map((produto, index) => (
                 <motion.div
                   key={produto.id}
@@ -235,19 +256,19 @@ export default function ProdutosIndex({ produtos }: Props) {
                   whileHover={{ x: 5 }}
                 >
                   <Card className="bg-gradient-to-r from-orange-50 to-white border-2 border-orange-200 shadow-lg hover:shadow-xl transition-all duration-300">
-                    <CardContent className="p-4">
-                      <div className="flex items-center space-x-4">
+                    <CardContent className="p-3 sm:p-4">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
                         <img
                           src={produto.imagem}
                           alt={produto.nome}
-                          className="w-24 h-24 object-cover rounded-lg"
+                          className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg"
                         />
                         
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h3 className="font-semibold text-lg text-gray-800">{produto.nome}</h3>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-2">
+                            <h3 className="font-semibold text-base sm:text-lg text-gray-800 line-clamp-2">{produto.nome}</h3>
                             {produto.destaque_dia && (
-                              <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0">
+                              <Badge className="bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 text-xs w-fit">
                                 <Star className="h-3 w-3 mr-1" />
                                 Destaque
                               </Badge>
@@ -258,14 +279,14 @@ export default function ProdutosIndex({ produtos }: Props) {
                           </p>
                         </div>
 
-                        <div className="text-right">
-                          <p className="text-xl font-bold text-orange-600 mb-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                          <p className="text-lg sm:text-xl font-bold text-orange-600 text-center sm:text-right">
                             R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
                           </p>
                           <Button
                             onClick={() => adicionarAoCarrinho(produto)}
                             disabled={isLoading}
-                            className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transition-all duration-300 text-white font-semibold cursor-pointer"
+                            className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transition-all duration-300 text-white font-semibold cursor-pointer w-full sm:w-auto"
                           >
                             <ShoppingCart className="h-4 w-4 mr-1" />
                             {isLoading ? 'Adicionando...' : 'Adicionar'}
@@ -284,11 +305,11 @@ export default function ProdutosIndex({ produtos }: Props) {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-center py-12"
+              className="text-center py-8 sm:py-12"
             >
-              <Search className="h-16 w-16 text-orange-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">Nenhum produto encontrado</h3>
-              <p className="text-gray-600 mb-6">
+              <Search className="h-12 w-12 sm:h-16 sm:w-16 text-orange-400 mx-auto mb-4" />
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-2">Nenhum produto encontrado</h3>
+              <p className="text-gray-600 mb-6 text-sm sm:text-base">
                 Tente ajustar os filtros ou buscar por outro termo
               </p>
               <Button 

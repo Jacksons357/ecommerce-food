@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { usePage } from '@inertiajs/react';
 import { type SharedData } from '@/types';
 import { cartStore, type CartItem, type Produto } from '@/stores/cartStore';
@@ -9,11 +9,17 @@ export function useCart() {
     const [cartItems, setCartItems] = useState<CartItem[]>([]);
     const [cartCount, setCartCount] = useState(0);
     const [isLoading, setIsLoading] = useState(false);
+    const authRef = useRef(auth);
 
     useEffect(() => {
-        // Configurar auth no store
-        cartStore.setAuth(auth);
+        // Só atualizar se o auth realmente mudou
+        if (JSON.stringify(authRef.current) !== JSON.stringify(auth)) {
+            authRef.current = auth;
+            cartStore.setAuth(auth);
+        }
+    }, [auth]);
 
+    useEffect(() => {
         // Inscrever para mudanças no carrinho
         const unsubscribe = cartStore.subscribe((items, count) => {
             setCartItems(items);
@@ -22,9 +28,9 @@ export function useCart() {
 
         // Cleanup na desmontagem
         return unsubscribe;
-    }, [auth]);
+    }, []); // Removido auth da dependência para evitar re-subscrições
 
-    const addToCart = async (produto: Produto, quantidade: number = 1) => {
+    const addToCart = useCallback(async (produto: Produto, quantidade: number = 1) => {
         setIsLoading(true);
         try {
             await cartStore.addToCart(produto, quantidade);
@@ -34,9 +40,9 @@ export function useCart() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const removeFromCart = async (itemId: number) => {
+    const removeFromCart = useCallback(async (itemId: number) => {
         setIsLoading(true);
         try {
             await cartStore.removeFromCart(itemId);
@@ -46,9 +52,9 @@ export function useCart() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const updateQuantity = async (itemId: number, quantidade: number) => {
+    const updateQuantity = useCallback(async (itemId: number, quantidade: number) => {
         setIsLoading(true);
         try {
             await cartStore.updateQuantity(itemId, quantidade);
@@ -58,9 +64,9 @@ export function useCart() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const clearCart = async () => {
+    const clearCart = useCallback(async () => {
         setIsLoading(true);
         try {
             await cartStore.clearCart();
@@ -70,11 +76,11 @@ export function useCart() {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const refreshCart = async () => {
-        cartStore.setAuth(auth);
-    };
+    const refreshCart = useCallback(async () => {
+        await cartStore.forceRefresh();
+    }, []);
 
     return {
         cartItems,
