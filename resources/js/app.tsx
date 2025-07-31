@@ -4,6 +4,7 @@ import { createInertiaApp } from '@inertiajs/react';
 import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import { createRoot } from 'react-dom/client';
 import './lib/csrf';
+import LoadingOverlay from './components/loading-overlay';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
@@ -13,9 +14,17 @@ createInertiaApp({
     setup({ el, App, props }) {
         const root = createRoot(el);
 
-        root.render(<App {...props} />);
+        root.render(
+            <>
+                <App {...props} />
+                <LoadingOverlay />
+            </>
+        );
     },
     progress: {
-        color: '#4B5563',
+        color: '#DC2626',
+        showSpinner: true,
+        delay: 0,
+        includeCSS: true,
     },
 });

@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { CheckCircle, LoaderCircle } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 import InputError from '@/components/input-error';
@@ -28,23 +28,35 @@ export default function Register() {
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-        post(route('register'), {
-            onSuccess: () => {
-                setSuccessMessage('Conta criada com sucesso! Redirecionando...');
-                setShowSuccessSpinner(true);
+        
+        // Mostra o loading imediatamente
+        setSuccessMessage('Criando conta...');
+        setShowSuccessSpinner(true);
+        
+        // Adiciona um delay antes de fazer a requisição
+        setTimeout(() => {
+            post(route('register'), {
+                onSuccess: () => {
+                    setSuccessMessage('Conta criada com sucesso! Redirecionando...');
+                    setShowSuccessSpinner(true);
 
-                // Esconde o spinner após 5 segundos
-                setTimeout(() => {
+                    // Esconde o spinner após 5 segundos
+                    setTimeout(() => {
+                        setShowSuccessSpinner(false);
+                        setSuccessMessage('');
+                    }, 5000);
+                },
+                onError: () => {
                     setShowSuccessSpinner(false);
                     setSuccessMessage('');
-                }, 5000);
-            },
-            onFinish: () => reset('password', 'password_confirmation'),
-        });
+                },
+                onFinish: () => reset('password', 'password_confirmation'),
+            });
+        }, 3000); // 2 segundos de delay
     };
 
-    // Se estiver mostrando o spinner de sucesso, renderiza apenas ele
-    if (showSuccessSpinner) {
+    // Se estiver processando ou mostrando o spinner de sucesso, renderiza apenas ele
+    if (processing || showSuccessSpinner) {
         return (
             <div className="grid h-screen grid-cols-1 lg:grid-cols-2">
                 <div className="hidden flex-col items-center justify-center bg-neutral-900 lg:flex">
@@ -63,8 +75,7 @@ export default function Register() {
                             <div className="space-y-6 text-center">
                                 <div className="flex justify-center">
                                     <div className="relative">
-                                        <CheckCircle className="h-16 w-16 animate-pulse text-green-500" />
-                                        <LoaderCircle className="absolute inset-0 m-auto h-20 w-20 animate-spin text-red-600" />
+                                        <LoaderCircle className="h-16 w-16 animate-spin text-red-600" />
                                     </div>
                                 </div>
                                 <div>
