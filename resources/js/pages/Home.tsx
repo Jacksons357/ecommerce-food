@@ -9,6 +9,7 @@ import AppLayout from '@/layouts/app-layout';
 import { Head, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Flame, ShoppingCart, Star } from 'lucide-react';
+import { useState } from 'react';
 import type { SharedData } from '@/types';
 
 interface Produto {
@@ -30,7 +31,8 @@ export default function Home({ produtos }: Props) {
     const { auth } = page.props;
     const isAdmin = auth?.user?.tipo_usuario === 'admin';
     
-    const { addToCart, isLoading } = useCart();
+    const [loadingProducts, setLoadingProducts] = useState<Set<number>>(new Set());
+    const { addToCart } = useCart();
     const { toast } = useToast();
 
     // Filtrar produtos em destaque
@@ -38,6 +40,9 @@ export default function Home({ produtos }: Props) {
     const produtosGerais = produtos.filter((produto) => !produto.destaque_dia);
 
     const adicionarAoCarrinho = async (produto: Produto) => {
+        // Adicionar produto ao loading
+        setLoadingProducts(prev => new Set(prev).add(produto.id));
+        
         try {
             await addToCart(produto, 1);
             toast({
@@ -51,6 +56,13 @@ export default function Home({ produtos }: Props) {
                 title: 'Erro',
                 description: error instanceof Error ? error.message : 'Erro ao adicionar ao carrinho. Tente novamente.',
                 variant: 'destructive',
+            });
+        } finally {
+            // Remover produto do loading
+            setLoadingProducts(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(produto.id);
+                return newSet;
             });
         }
     };
@@ -130,11 +142,11 @@ export default function Home({ produtos }: Props) {
                                                     <Button
                                                         size="sm"
                                                         onClick={() => adicionarAoCarrinho(produto)}
-                                                        disabled={isLoading}
+                                                        disabled={loadingProducts.has(produto.id)}
                                                         className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
                                                     >
                                                         <ShoppingCart className="mr-2 h-4 w-4" />
-                                                        {isLoading ? 'Adicionando...' : 'Adicionar'}
+                                                        {loadingProducts.has(produto.id) ? 'Adicionando...' : 'Adicionar'}
                                                     </Button>
                                                 )}
                                             </div>
@@ -191,11 +203,11 @@ export default function Home({ produtos }: Props) {
                                                 <Button
                                                     size="sm"
                                                     onClick={() => adicionarAoCarrinho(produto)}
-                                                    disabled={isLoading}
+                                                    disabled={loadingProducts.has(produto.id)}
                                                     className="w-full cursor-pointer bg-orange-600 transition-all duration-300 hover:bg-orange-700 sm:w-auto"
                                                 >
                                                     <ShoppingCart className="mr-1 h-4 w-4" />
-                                                    {isLoading ? 'Adicionando...' : 'Adicionar'}
+                                                    {loadingProducts.has(produto.id) ? 'Adicionando...' : 'Adicionar'}
                                                 </Button>
                                             )}
                                         </div>

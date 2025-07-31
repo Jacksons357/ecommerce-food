@@ -37,11 +37,16 @@ export default function ProdutosIndex({ produtos }: Props) {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [selectedCategory, setSelectedCategory] = useState('todos');
     const [showFilters, setShowFilters] = useState(false);
-    const { addToCart, isLoading } = useCart();
+    const [loadingProducts, setLoadingProducts] = useState<Set<number>>(new Set());
+    const { addToCart } = useCart();
     const { toast } = useToast();
 
     const adicionarAoCarrinho = async (produto: Produto) => {
         console.log('adicionarAoCarrinho called:', produto);
+        
+        // Adicionar produto ao loading
+        setLoadingProducts(prev => new Set(prev).add(produto.id));
+        
         try {
             await addToCart(produto, 1);
             console.log('Produto adicionado com sucesso');
@@ -56,6 +61,13 @@ export default function ProdutosIndex({ produtos }: Props) {
                 title: 'Erro',
                 description: error instanceof Error ? error.message : 'Erro ao adicionar ao carrinho. Tente novamente.',
                 variant: 'destructive',
+            });
+        } finally {
+            // Remover produto do loading
+            setLoadingProducts(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(produto.id);
+                return newSet;
             });
         }
     };
@@ -250,11 +262,11 @@ export default function ProdutosIndex({ produtos }: Props) {
                                                     <Button
                                                         size="sm"
                                                         onClick={() => adicionarAoCarrinho(produto)}
-                                                        disabled={isLoading}
+                                                        disabled={loadingProducts.has(produto.id)}
                                                         className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
                                                     >
                                                         <ShoppingCart className="mr-1 h-4 w-4" />
-                                                        {isLoading ? 'Adicionando...' : 'Adicionar'}
+                                                        {loadingProducts.has(produto.id) ? 'Adicionando...' : 'Adicionar'}
                                                     </Button>
                                                 )}
                                             </div>
@@ -305,11 +317,11 @@ export default function ProdutosIndex({ produtos }: Props) {
                                                     {!isAdmin && (
                                                         <Button
                                                             onClick={() => adicionarAoCarrinho(produto)}
-                                                            disabled={isLoading}
+                                                            disabled={loadingProducts.has(produto.id)}
                                                             className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
                                                         >
                                                             <ShoppingCart className="mr-1 h-4 w-4" />
-                                                            {isLoading ? 'Adicionando...' : 'Adicionar'}
+                                                            {loadingProducts.has(produto.id) ? 'Adicionando...' : 'Adicionar'}
                                                         </Button>
                                                     )}
                                                 </div>
