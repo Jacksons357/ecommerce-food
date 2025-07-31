@@ -2,6 +2,12 @@
 
 Um sistema moderno e completo de gerenciamento de cardápio/produtos com funcionalidades específicas para clientes e administradores, desenvolvido com Laravel, React, TypeScript e TailwindCSS.
 
+## 🎥 Demonstração
+
+[![Demonstração do Sistema](https://img.youtube.com/vi/9624TN8PMPA/0.jpg)](https://www.youtube.com/watch?v=9624TN8PMPA)
+
+**Clique na imagem acima para assistir a demonstração completa do sistema**
+
 ## ✨ Funcionalidades Principais
 
 ### 🏠 Tela Principal (Home)
