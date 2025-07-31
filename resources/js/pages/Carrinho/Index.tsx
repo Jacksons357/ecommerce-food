@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { useCartStore } from '@/hooks/use-cart-store';
+import { useCart } from '@/hooks/use-cart';
+import { useCartSync } from '@/hooks/use-cart-sync';
 import { type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
@@ -48,25 +49,45 @@ interface Props {
 export default function CarrinhoIndex({ carrinho }: Props) {
     const page = usePage<SharedData>();
     const { auth } = page.props;
-    const { items: cartItems, removeFromCart, updateQuantity, clearCart, forceRefresh: refreshCart } = useCartStore();
+    const { 
+        items, 
+        count,
+        total,
+        isLoading,
+        isAuthenticated,
+        isAdmin,
+        addToCart,
+        updateQuantity, 
+        removeFromCart, 
+        clearCart,
+        syncLocalCart,
+        syncCartMutation
+    } = useCart();
+    
+    // Hook para sincronização automática
+    useCartSync();
+    
     const [observacoes, setObservacoes] = useState('');
     const [isFinalizando, setIsFinalizando] = useState(false);
     const [showClearCartDialog, setShowClearCartDialog] = useState(false);
+    const [syncMessage, setSyncMessage] = useState('');
 
-    // Atualizar carrinho quando a página carregar
+    // Mostrar mensagem de sincronização quando necessário
     useEffect(() => {
-        refreshCart();
-    }, [refreshCart]);
+        if (isAuthenticated && !isAdmin && syncCartMutation.isPending) {
+            setSyncMessage('Sincronizando itens do carrinho...');
+        } else {
+            setSyncMessage('');
+        }
+    }, [isAuthenticated, isAdmin, syncCartMutation.isPending]);
 
     // Type guard para verificar se é CarrinhoItem
     const isCarrinhoItem = (item: CarrinhoItem | CartItem): item is CarrinhoItem => {
         return 'produto' in item;
     };
 
-    // Usar dados do carrinho autenticado ou do localStorage
-    const items = auth?.user ? carrinho?.items || [] : cartItems;
-    const total = auth?.user ? carrinho?.total || 0 : cartItems.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
-    const quantidadeTotal = auth?.user ? carrinho?.quantidade_total || 0 : cartItems.reduce((sum, item) => sum + item.quantidade, 0);
+    // Usar dados do novo sistema
+    const quantidadeTotal = count;
 
     const atualizarQuantidade = async (itemId: number, novaQuantidade: number) => {
         if (novaQuantidade < 1) return;
@@ -216,6 +237,12 @@ export default function CarrinhoIndex({ carrinho }: Props) {
                                     <Badge className="mt-1 border-0 bg-gradient-to-r from-orange-500 to-red-500 text-xs text-white sm:mt-2 sm:text-sm">
                                         {items.length} item{items.length !== 1 ? 's' : ''}
                                     </Badge>
+                                    {syncMessage && (
+                                        <div className="mt-2 flex items-center text-sm text-blue-600">
+                                            <Clock className="mr-1 h-4 w-4 animate-spin" />
+                                            {syncMessage}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                             {items.length > 0 && (

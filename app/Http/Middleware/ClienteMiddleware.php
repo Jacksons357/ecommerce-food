@@ -15,8 +15,19 @@ class ClienteMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (! auth()->check() || ! auth()->user()->isCliente()) {
-            abort(403, 'Acesso negado. Apenas clientes podem acessar esta área.');
+        if (! auth()->check()) {
+            abort(403, 'Acesso negado. Você precisa estar logado para acessar esta área.');
+        }
+
+        if (! auth()->user()->isCliente()) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Administradores não podem acessar o carrinho',
+                ], 403);
+            }
+
+            return redirect()->route('dashboard')->with('error', 'Administradores não podem acessar o carrinho');
         }
 
         return $next($request);

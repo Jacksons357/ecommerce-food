@@ -35,12 +35,26 @@ class CarrinhoController extends Controller
      */
     public function adicionar(Request $request)
     {
+        \Log::info('CarrinhoController@adicionar - Iniciando requisição');
+        \Log::info('Request data:', $request->all());
+
         $request->validate([
             'produto_id' => 'required|exists:produtos,id',
             'quantidade' => 'required|integer|min:1',
         ]);
 
         $usuario = auth()->user();
+        \Log::info('Usuário: ' . ($usuario ? $usuario->name : 'Não autenticado'));
+
+        // Verifica se o usuário é admin
+        if ($usuario && $usuario->isAdmin()) {
+            \Log::info('Admin tentou adicionar produto ao carrinho');
+            return response()->json([
+                'success' => false,
+                'message' => 'Administradores não podem adicionar produtos ao carrinho',
+            ], 403);
+        }
+
         $produto = Produto::findOrFail($request->produto_id);
 
         // Verifica se o produto está ativo

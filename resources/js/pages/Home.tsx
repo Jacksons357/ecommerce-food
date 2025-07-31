@@ -3,12 +3,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Carousel } from '@/components/ui/carousel';
 import { banners } from '@/config/banners';
-import { useCartStore } from '@/hooks/use-cart-store';
+import { useCart } from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Flame, ShoppingCart, Star } from 'lucide-react';
+import type { SharedData } from '@/types';
 
 interface Produto {
     id: number;
@@ -25,7 +26,11 @@ interface Props {
 }
 
 export default function Home({ produtos }: Props) {
-    const { addToCart, isLoading } = useCartStore();
+    const page = usePage<SharedData>();
+    const { auth } = page.props;
+    const isAdmin = auth?.user?.tipo_usuario === 'admin';
+    
+    const { addToCart, isLoading } = useCart();
     const { toast } = useToast();
 
     // Filtrar produtos em destaque
@@ -121,15 +126,17 @@ export default function Home({ produtos }: Props) {
                                                 <span className="text-xl font-bold text-orange-600 sm:text-2xl">
                                                     R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
                                                 </span>
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => adicionarAoCarrinho(produto)}
-                                                    disabled={isLoading}
-                                                    className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
-                                                >
-                                                    <ShoppingCart className="mr-2 h-4 w-4" />
-                                                    {isLoading ? 'Adicionando...' : 'Adicionar'}
-                                                </Button>
+                                                {!isAdmin && (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => adicionarAoCarrinho(produto)}
+                                                        disabled={isLoading}
+                                                        className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
+                                                    >
+                                                        <ShoppingCart className="mr-2 h-4 w-4" />
+                                                        {isLoading ? 'Adicionando...' : 'Adicionar'}
+                                                    </Button>
+                                                )}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -180,15 +187,17 @@ export default function Home({ produtos }: Props) {
                                             <span className="text-lg font-bold text-orange-600 sm:text-xl">
                                                 R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
                                             </span>
-                                            <Button
-                                                size="sm"
-                                                onClick={() => adicionarAoCarrinho(produto)}
-                                                disabled={isLoading}
-                                                className="w-full cursor-pointer bg-orange-600 transition-all duration-300 hover:bg-orange-700 sm:w-auto"
-                                            >
-                                                <ShoppingCart className="mr-1 h-4 w-4" />
-                                                {isLoading ? 'Adicionando...' : 'Adicionar'}
-                                            </Button>
+                                            {!isAdmin && (
+                                                <Button
+                                                    size="sm"
+                                                    onClick={() => adicionarAoCarrinho(produto)}
+                                                    disabled={isLoading}
+                                                    className="w-full cursor-pointer bg-orange-600 transition-all duration-300 hover:bg-orange-700 sm:w-auto"
+                                                >
+                                                    <ShoppingCart className="mr-1 h-4 w-4" />
+                                                    {isLoading ? 'Adicionando...' : 'Adicionar'}
+                                                </Button>
+                                            )}
                                         </div>
                                     </CardContent>
                                 </Card>

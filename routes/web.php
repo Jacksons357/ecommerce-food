@@ -141,7 +141,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         }
     })->name('dashboard');
 
-    // Carrinho
+    // Carrinho - Temporariamente sem middleware para debug
     Route::prefix('carrinho')->name('carrinho.')->group(function () {
         Route::get('/', [CarrinhoController::class, 'index'])->name('index');
         Route::post('/adicionar', [CarrinhoController::class, 'adicionar'])->name('adicionar');
@@ -177,5 +177,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-require __DIR__.'/settings.php';
-require __DIR__.'/auth.php';
+require __DIR__ . '/settings.php';
+require __DIR__ . '/auth.php';

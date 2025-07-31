@@ -2,7 +2,9 @@
  * Obtém o token CSRF do meta tag
  */
 export function getCSRFToken(): string {
-    return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    console.log('CSRF Token:', token);
+    return token;
 }
 
 /**
@@ -43,5 +45,7 @@ export function setupCSRF() {
 
 // Configura automaticamente quando o módulo é carregado
 if (typeof window !== 'undefined') {
+    console.log('Setting up CSRF interceptor...');
     setupCSRF();
+    console.log('CSRF interceptor setup complete');
 }

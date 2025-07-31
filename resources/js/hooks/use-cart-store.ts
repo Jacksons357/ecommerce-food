@@ -13,21 +13,22 @@ export function useCartStore() {
     const [isLoading, setIsLoading] = useState(false);
     const [isInitialized, setIsInitialized] = useState(false);
 
+    // Configurar auth no store quando mudar
     useEffect(() => {
-        // Configurar auth no store apenas uma vez
-        if (!isInitialized) {
-            console.log('Inicializando cartStore com auth:', auth?.user?.name);
-            cartStore.setAuth(auth);
-            setIsInitialized(true);
-        } else if (auth?.user && !cartStore.isInitialized()) {
-            // Se o auth mudou e o store não foi inicializado, reconfigurar
-            console.log('Reconfigurando cartStore após mudança de auth');
-            cartStore.setAuth(auth);
-        }
+        const userType = auth?.user?.tipo_usuario;
+        
+        console.log('Auth mudou:', auth?.user?.name, 'Tipo:', userType);
+        cartStore.setAuth(auth);
+        setIsInitialized(true);
+    }, [auth?.user?.id, auth?.user?.tipo_usuario]); // Só executar quando o usuário ou tipo mudar
 
-        // Inscrever para mudanças no carrinho
+    // Inscrever para mudanças no carrinho (apenas uma vez)
+    useEffect(() => {
         const unsubscribe = cartStore.subscribe((cartItems, cartCount, loading) => {
-            console.log('CartStore atualizado:', { items: cartItems.length, count: cartCount, loading });
+            // Reduzir logs para evitar spam
+            if (cartItems.length > 0 || loading) {
+                console.log('CartStore atualizado:', { items: cartItems.length, count: cartCount, loading });
+            }
             setItems(cartItems);
             setCount(cartCount);
             setTotal(cartItems.reduce((sum, item) => sum + item.preco * item.quantidade, 0));
@@ -35,7 +36,7 @@ export function useCartStore() {
         });
 
         return unsubscribe;
-    }, [auth, isInitialized]);
+    }, []); // Executar apenas uma vez
 
     const addToCart = async (produto: Produto, quantidade: number = 1) => {
         await cartStore.addToCart(produto, quantidade);

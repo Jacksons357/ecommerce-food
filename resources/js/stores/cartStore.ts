@@ -1,3 +1,5 @@
+import { getCSRFToken } from '@/lib/csrf';
+
 interface CartItem {
     id: number;
     produto_id: number;
@@ -49,17 +51,42 @@ class CartStore {
     public setAuth(auth: { user?: AuthUser } | null) {
         const wasAuthenticated = this.auth?.user;
         const isNowAuthenticated = auth?.user;
+        const isNowAdmin = auth?.user?.tipo_usuario === 'admin';
+
+        // Evitar processamento desnecessário se o auth não mudou
+        if (this.auth?.user?.id === auth?.user?.id && this.auth?.user?.tipo_usuario === auth?.user?.tipo_usuario) {
+            return;
+        }
 
         this.auth = auth;
 
-        // Se o usuário acabou de fazer login, sincronizar localStorage com banco
+        // Se o usuário acabou de fazer login
         if (!wasAuthenticated && isNowAuthenticated) {
             console.log('Usuário fez login, sincronizando carrinho...');
-            this.syncLocalStorageToAPI();
+            
+            // Se é cliente, sincronizar localStorage com banco
+            if (!isNowAdmin) {
+                // Carregar do banco primeiro, depois sincronizar
+                this.loadFromAPI().then(() => {
+                    this.syncLocalStorageToAPI();
+                });
+            } else {
+                // Se é admin, limpar carrinho do localStorage
+                console.log('Admin logado, limpando carrinho do localStorage');
+                localStorage.removeItem('cart');
+                this.items = [];
+                this.notifyListeners();
+            }
         } else if (isNowAuthenticated && !this._isInitialized) {
-            // Se já estava autenticado mas não foi inicializado, apenas carregar do banco
-            console.log('Usuário já autenticado, carregando carrinho do banco...');
-            this.loadFromAPI();
+            // Se já estava autenticado mas não foi inicializado
+            if (!isNowAdmin) {
+                console.log('Usuário cliente já autenticado, carregando carrinho do banco...');
+                this.loadFromAPI();
+            } else {
+                console.log('Admin já autenticado, carrinho vazio');
+                this.items = [];
+                this.notifyListeners();
+            }
         } else if (!isNowAuthenticated) {
             // Se não está autenticado, carregar do localStorage
             console.log('Usuário não autenticado, carregando carrinho do localStorage...');
@@ -85,7 +112,10 @@ class CartStore {
 
     private notifyListeners() {
         const count = this.calculateCount();
-        this.listeners.forEach((listener) => listener(this.items, count, this.isLoading));
+        // Usar setTimeout para evitar loops infinitos
+        setTimeout(() => {
+            this.listeners.forEach((listener) => listener(this.items, count, this.isLoading));
+        }, 0);
     }
 
     private setLoading(loading: boolean) {
@@ -187,36 +217,51 @@ class CartStore {
         this.setLoading(true);
         try {
             console.log('Enviando itens para sincronização:', localItems);
-            const response = await fetch('/carrinho/sincronizar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-                },
-                body: JSON.stringify({ items: localItems }),
-            });
+                            const response = await fetch('/carrinho/sincronizar', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': getCSRFToken(),
+                    },
+                    body: JSON.stringify({ items: localItems }),
+                });
 
             if (response.ok) {
                 const data = await response.json();
                 console.log('Sincronização bem-sucedida:', data);
                 
-                this.items =
-                    data.carrinho?.items?.map(
-                        (item: {
-                            id: number;
-                            produto_id: number;
-                            produto: { nome: string; imagem?: string };
-                            preco_unitario: number;
-                            quantidade: number;
-                        }) => ({
-                            id: item.id,
-                            produto_id: item.produto_id,
-                            nome: item.produto.nome,
-                            preco: item.preco_unitario,
-                            quantidade: item.quantidade,
-                            imagem: item.produto.imagem,
-                        }),
-                    ) || [];
+                // Mesclar itens do banco com itens do localStorage
+                const serverItems = data.carrinho?.items?.map(
+                    (item: {
+                        id: number;
+                        produto_id: number;
+                        produto: { nome: string; imagem?: string };
+                        preco_unitario: number;
+                        quantidade: number;
+                    }) => ({
+                        id: item.id,
+                        produto_id: item.produto_id,
+                        nome: item.produto.nome,
+                        preco: item.preco_unitario,
+                        quantidade: item.quantidade,
+                        imagem: item.produto.imagem,
+                    }),
+                ) || [];
+
+                // Combinar itens do servidor com itens locais (evitando duplicatas)
+                const combinedItems = [...serverItems];
+                
+                // Adicionar itens locais que não existem no servidor
+                localItems.forEach(localItem => {
+                    const existsInServer = serverItems.some(serverItem => 
+                        serverItem.produto_id === localItem.produto_id
+                    );
+                    if (!existsInServer) {
+                        combinedItems.push(localItem);
+                    }
+                });
+
+                this.items = combinedItems;
 
                 // Limpar localStorage após sincronização bem-sucedida
                 localStorage.removeItem('cart');
@@ -247,6 +292,7 @@ class CartStore {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': getCSRFToken(),
                     },
                     body: JSON.stringify({
                         produto_id: produto.id,
@@ -300,6 +346,9 @@ class CartStore {
             try {
                 const response = await fetch(`/carrinho/item/${itemId}`, {
                     method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': getCSRFToken(),
+                    },
                 });
 
                 if (response.ok) {
@@ -332,6 +381,7 @@ class CartStore {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': getCSRFToken(),
                     },
                     body: JSON.stringify({ quantidade }),
                 });
@@ -364,6 +414,9 @@ class CartStore {
             try {
                 const response = await fetch('/carrinho/limpar', {
                     method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': getCSRFToken(),
+                    },
                 });
 
                 if (response.ok) {

@@ -3,13 +3,14 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCartStore } from '@/hooks/use-cart-store';
+import { useCart } from '@/hooks/use-cart';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Filter, Grid, List, Search, ShoppingCart, Star } from 'lucide-react';
 import { useState } from 'react';
+import type { SharedData } from '@/types';
 
 interface Produto {
     id: number;
@@ -27,17 +28,23 @@ interface Props {
 }
 
 export default function ProdutosIndex({ produtos }: Props) {
+    const page = usePage<SharedData>();
+    const { auth } = page.props;
+    const isAdmin = auth?.user?.tipo_usuario === 'admin';
+    
     const [searchTerm, setSearchTerm] = useState('');
     const [sortBy, setSortBy] = useState('nome');
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [selectedCategory, setSelectedCategory] = useState('todos');
     const [showFilters, setShowFilters] = useState(false);
-    const { addToCart, isLoading } = useCartStore();
+    const { addToCart, isLoading } = useCart();
     const { toast } = useToast();
 
     const adicionarAoCarrinho = async (produto: Produto) => {
+        console.log('adicionarAoCarrinho called:', produto);
         try {
             await addToCart(produto, 1);
+            console.log('Produto adicionado com sucesso');
             toast({
                 title: 'Sucesso!',
                 description: 'Produto adicionado ao carrinho!',
@@ -94,13 +101,19 @@ export default function ProdutosIndex({ produtos }: Props) {
                                 </p>
                             </div>
 
-                            <Button
-                                onClick={() => router.visit('/carrinho')}
-                                className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
-                            >
-                                <ShoppingCart className="mr-2 h-4 w-4" />
-                                Ver Carrinho
-                            </Button>
+                            {!isAdmin ? (
+                                <Button
+                                    onClick={() => router.visit('/carrinho')}
+                                    className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
+                                >
+                                    <ShoppingCart className="mr-2 h-4 w-4" />
+                                    Ver Carrinho
+                                </Button>
+                            ) : (
+                                <div className="text-center">
+                                    <p className="text-sm text-gray-600">Administradores não podem acessar o carrinho</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Busca - Sempre visível */}
@@ -233,15 +246,17 @@ export default function ProdutosIndex({ produtos }: Props) {
                                                 <span className="text-lg font-bold text-orange-600 sm:text-xl">
                                                     R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
                                                 </span>
-                                                <Button
-                                                    size="sm"
-                                                    onClick={() => adicionarAoCarrinho(produto)}
-                                                    disabled={isLoading}
-                                                    className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
-                                                >
-                                                    <ShoppingCart className="mr-1 h-4 w-4" />
-                                                    {isLoading ? 'Adicionando...' : 'Adicionar'}
-                                                </Button>
+                                                {!isAdmin && (
+                                                    <Button
+                                                        size="sm"
+                                                        onClick={() => adicionarAoCarrinho(produto)}
+                                                        disabled={isLoading}
+                                                        className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
+                                                    >
+                                                        <ShoppingCart className="mr-1 h-4 w-4" />
+                                                        {isLoading ? 'Adicionando...' : 'Adicionar'}
+                                                    </Button>
+                                                )}
                                             </div>
                                         </CardContent>
                                     </Card>
@@ -287,14 +302,16 @@ export default function ProdutosIndex({ produtos }: Props) {
                                                     <p className="text-center text-lg font-bold text-orange-600 sm:text-right sm:text-xl">
                                                         R$ {Number(produto.preco).toFixed(2).replace('.', ',')}
                                                     </p>
-                                                    <Button
-                                                        onClick={() => adicionarAoCarrinho(produto)}
-                                                        disabled={isLoading}
-                                                        className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
-                                                    >
-                                                        <ShoppingCart className="mr-1 h-4 w-4" />
-                                                        {isLoading ? 'Adicionando...' : 'Adicionar'}
-                                                    </Button>
+                                                    {!isAdmin && (
+                                                        <Button
+                                                            onClick={() => adicionarAoCarrinho(produto)}
+                                                            disabled={isLoading}
+                                                            className="w-full cursor-pointer bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700 sm:w-auto"
+                                                        >
+                                                            <ShoppingCart className="mr-1 h-4 w-4" />
+                                                            {isLoading ? 'Adicionando...' : 'Adicionar'}
+                                                        </Button>
+                                                    )}
                                                 </div>
                                             </div>
                                         </CardContent>

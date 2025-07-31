@@ -39,9 +39,8 @@ class AuthenticatedSessionController extends Controller
         if ($user->isAdmin()) {
             return redirect()->intended(route('dashboard', absolute: false));
         } else {
-            // Clientes vão para a página inicial
-            // A sincronização do carrinho será feita no frontend
-            return redirect()->intended(route('home', absolute: false));
+            // Clientes vão para o carrinho após login para sincronizar itens
+            return redirect()->intended(route('carrinho.index', absolute: false));
         }
     }
 

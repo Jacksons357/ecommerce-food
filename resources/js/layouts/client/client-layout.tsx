@@ -9,7 +9,7 @@ export default function ClientLayout({ children }: PropsWithChildren) {
             <CartSync />
             <CartLoadingOverlay />
             <Navbar />
-            <main className="pt-16 sm:pt-20">{children}</main>
+            <main className="pt-16 sm:pt-16">{children}</main>
             <Toaster />
         </div>
     );
