@@ -4,6 +4,7 @@ use App\Http\Controllers\CarrinhoController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PedidoController;
 use App\Http\Controllers\ProdutoController;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
@@ -126,7 +127,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ];
 
             $produtos = \App\Models\Produto::latest()->take(5)->get();
-            $pedidos = \App\Models\Pedido::with('items')->latest()->take(5)->get();
+            $pedidos = \App\Models\Pedido::with('items')->latest()->take(5)->get()
+                ->map(function ($pedido) {
+                    $pedido->items_count = $pedido->items->sum('quantidade');
+                    return $pedido;
+                });
 
             return Inertia::render('dashboard', [
                 'isAdmin' => true,
@@ -136,7 +141,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
             ]);
         } else {
             // Dados para cliente
-            $pedidos = $user->pedidos()->with('items.produto')->latest()->take(5)->get();
+            $pedidos = $user->pedidos()->with('items.produto')->latest()->take(5)->get()
+                ->map(function ($pedido) {
+                    $pedido->items_count = $pedido->items->sum('quantidade');
+                    return $pedido;
+                });
 
             return Inertia::render('dashboard', [
                 'isAdmin' => false,

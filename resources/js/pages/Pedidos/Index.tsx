@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
 import { motion } from 'framer-motion';
-import { AlertCircle, CheckCircle, Clock, Eye, Package } from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, Package } from 'lucide-react';
 
 interface PedidoItem {
     id: number;
@@ -206,14 +206,14 @@ export default function PedidosIndex({ pedidos }: Props) {
                                                     <div className="text-xs text-orange-600 sm:text-sm">
                                                         <p>Última atualização: {formatDate(pedido.updated_at)}</p>
                                                     </div>
-                                                    <Button
+                                                    {/* <Button
                                                         variant="outline"
                                                         size="sm"
                                                         className="w-full border-orange-300 text-orange-600 hover:bg-orange-50 sm:w-auto"
                                                     >
                                                         <Eye className="mr-2 h-4 w-4" />
                                                         Ver Detalhes
-                                                    </Button>
+                                                    </Button> */}
                                                 </div>
                                             </CardContent>
                                         </Card>

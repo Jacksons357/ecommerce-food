@@ -139,7 +139,11 @@ export default function Dashboard({ isAdmin, produtos, pedidos }: Props) {
                                         </div>
                                     )}
                                 </div>
-                                <Button variant="outline" className="mt-4 w-full">
+                                <Button 
+                                    variant="outline" 
+                                    className="mt-4 w-full"
+                                    onClick={() => router.visit('/admin/pedidos')}
+                                >
                                     Ver Todos os Pedidos
                                 </Button>
                             </CardContent>

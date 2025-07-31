@@ -25,6 +25,11 @@ export function AppSidebar() {
             href: '/admin/produtos',
             icon: Package,
         });
+        mainNavItems.push({
+            title: 'Pedidos',
+            href: '/admin/pedidos',
+            icon: ShoppingBag,
+        });
     } else {
         // Adiciona itens para clientes
         mainNavItems.push(

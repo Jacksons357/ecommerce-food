@@ -41,7 +41,11 @@ class PedidoController extends Controller
     {
         $pedidos = Pedido::with(['usuario', 'items.produto'])
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->get()
+            ->map(function ($pedido) {
+                $pedido->items_count = $pedido->items->sum('quantidade');
+                return $pedido;
+            });
 
         return Inertia::render('Admin/Pedidos/Index', [
             'pedidos' => $pedidos,
@@ -141,10 +145,8 @@ class PedidoController extends Controller
 
         $pedido->update(['status' => $request->status]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Status atualizado com sucesso!',
-        ]);
+        // Retorna para a página de pedidos com mensagem de sucesso
+        return redirect()->back()->with('success', 'Status atualizado com sucesso!');
     }
 
     /**
