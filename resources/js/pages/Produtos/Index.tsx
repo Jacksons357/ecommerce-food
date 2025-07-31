@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useCart } from '@/hooks/use-cart-store';
+import { useCartStore } from '@/hooks/use-cart-store';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
@@ -32,7 +32,7 @@ export default function ProdutosIndex({ produtos }: Props) {
     const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
     const [selectedCategory, setSelectedCategory] = useState('todos');
     const [showFilters, setShowFilters] = useState(false);
-    const { addToCart, isLoading } = useCart();
+    const { addToCart, isLoading } = useCartStore();
     const { toast } = useToast();
 
     const adicionarAoCarrinho = async (produto: Produto) => {

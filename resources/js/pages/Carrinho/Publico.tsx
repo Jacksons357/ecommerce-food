@@ -2,7 +2,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useCart } from '@/hooks/use-cart-store';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useCartStore } from '@/hooks/use-cart-store';
 import AppLayout from '@/layouts/app-layout';
 import { Head, router } from '@inertiajs/react';
 import { motion } from 'framer-motion';
@@ -12,8 +13,9 @@ import { useEffect, useState } from 'react';
 // Interface removida pois não está sendo usada
 
 export default function CarrinhoPublico() {
-    const { cartItems, updateQuantity, removeFromCart, clearCart } = useCart();
+    const { items: cartItems, updateQuantity, removeFromCart, clearCart } = useCartStore();
     const [loading] = useState(false);
+    const [showClearCartDialog, setShowClearCartDialog] = useState(false);
 
     // Carregar carrinho do localStorage
     useEffect(() => {
@@ -37,6 +39,7 @@ export default function CarrinhoPublico() {
     // Limpar carrinho
     const handleClearCart = () => {
         clearCart();
+        setShowClearCartDialog(false);
     };
 
     // Calcular total
@@ -128,14 +131,34 @@ export default function CarrinhoPublico() {
                                     {cartItems.length} item{cartItems.length !== 1 ? 's' : ''}
                                 </Badge>
                             </div>
-                            <Button
-                                variant="outline"
-                                onClick={handleClearCart}
-                                className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
-                            >
-                                <Trash2 className="mr-2 h-4 w-4" />
-                                Limpar Carrinho
-                            </Button>
+                            <AlertDialog open={showClearCartDialog} onOpenChange={setShowClearCartDialog}>
+                                <AlertDialogTrigger asChild>
+                                    <Button
+                                        variant="outline"
+                                        className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                    >
+                                        <Trash2 className="mr-2 h-4 w-4" />
+                                        Limpar Carrinho
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Limpar Carrinho</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            Tem certeza que deseja limpar o carrinho? Esta ação não pode ser desfeita.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                        <AlertDialogAction
+                                            onClick={handleClearCart}
+                                            className="bg-red-600 text-white hover:bg-red-700"
+                                        >
+                                            Limpar Carrinho
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
                         </motion.div>
 
                         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">

@@ -40,6 +40,7 @@ class AuthenticatedSessionController extends Controller
             return redirect()->intended(route('dashboard', absolute: false));
         } else {
             // Clientes vão para a página inicial
+            // A sincronização do carrinho será feita no frontend
             return redirect()->intended(route('home', absolute: false));
         }
     }

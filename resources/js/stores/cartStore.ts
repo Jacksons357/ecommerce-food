@@ -21,7 +21,7 @@ interface AuthUser {
     tipo_usuario: string;
 }
 
-type CartListener = (items: CartItem[], count: number) => void;
+type CartListener = (items: CartItem[], count: number, isLoading: boolean) => void;
 
 class CartStore {
     private static instance: CartStore;
@@ -32,6 +32,8 @@ class CartStore {
     private lastApiCall = 0;
     private apiCacheTimeout = 5000; // 5 segundos de cache
     private pendingApiCall: Promise<void> | null = null;
+    private isLoading = false;
+    private syncPromise: Promise<boolean> | null = null;
 
     private constructor() {
         this.loadFromLocalStorage();
@@ -52,12 +54,15 @@ class CartStore {
 
         // Se o usuário acabou de fazer login, sincronizar localStorage com banco
         if (!wasAuthenticated && isNowAuthenticated) {
+            console.log('Usuário fez login, sincronizando carrinho...');
             this.syncLocalStorageToAPI();
         } else if (isNowAuthenticated && !this._isInitialized) {
             // Se já estava autenticado mas não foi inicializado, apenas carregar do banco
+            console.log('Usuário já autenticado, carregando carrinho do banco...');
             this.loadFromAPI();
         } else if (!isNowAuthenticated) {
             // Se não está autenticado, carregar do localStorage
+            console.log('Usuário não autenticado, carregando carrinho do localStorage...');
             this.loadFromLocalStorage();
         }
 
@@ -67,7 +72,7 @@ class CartStore {
     public subscribe(listener: CartListener): () => void {
         this.listeners.push(listener);
         // Call immediately with current state
-        listener(this.items, this.calculateCount());
+        listener(this.items, this.calculateCount(), this.isLoading);
 
         // Return unsubscribe function
         return () => {
@@ -80,7 +85,12 @@ class CartStore {
 
     private notifyListeners() {
         const count = this.calculateCount();
-        this.listeners.forEach((listener) => listener(this.items, count));
+        this.listeners.forEach((listener) => listener(this.items, count, this.isLoading));
+    }
+
+    private setLoading(loading: boolean) {
+        this.isLoading = loading;
+        this.notifyListeners();
     }
 
     private calculateCount(): number {
@@ -132,6 +142,7 @@ class CartStore {
     }
 
     private async _loadFromAPI(): Promise<void> {
+        this.setLoading(true);
         try {
             const response = await fetch('/api/cart-data');
             if (response.ok) {
@@ -141,29 +152,54 @@ class CartStore {
             }
         } catch (error) {
             console.error('Erro ao carregar carrinho da API:', error);
+        } finally {
+            this.setLoading(false);
         }
     }
 
-    private async syncLocalStorageToAPI() {
+    // Método síncrono para sincronização - retorna Promise<boolean> indicando se há itens
+    public async syncLocalStorageToAPI(): Promise<boolean> {
+        // Se já existe uma sincronização em andamento, aguardar
+        if (this.syncPromise) {
+            return this.syncPromise;
+        }
+
+        this.syncPromise = this._syncLocalStorageToAPI();
+        try {
+            return await this.syncPromise;
+        } finally {
+            this.syncPromise = null;
+        }
+    }
+
+    private async _syncLocalStorageToAPI(): Promise<boolean> {
         const localItems = this.items;
+
+        console.log('Iniciando sincronização do localStorage com API...', localItems);
 
         if (localItems.length === 0) {
             // Se não há itens no localStorage, apenas carregar do banco
+            console.log('Nenhum item no localStorage, carregando do banco...');
             await this.loadFromAPI();
-            return;
+            return this.items.length > 0;
         }
 
+        this.setLoading(true);
         try {
+            console.log('Enviando itens para sincronização:', localItems);
             const response = await fetch('/carrinho/sincronizar', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                 },
                 body: JSON.stringify({ items: localItems }),
             });
 
             if (response.ok) {
                 const data = await response.json();
+                console.log('Sincronização bem-sucedida:', data);
+                
                 this.items =
                     data.carrinho?.items?.map(
                         (item: {
@@ -184,20 +220,28 @@ class CartStore {
 
                 // Limpar localStorage após sincronização bem-sucedida
                 localStorage.removeItem('cart');
+                console.log('localStorage limpo após sincronização');
                 this.notifyListeners();
+                return this.items.length > 0;
             } else {
                 // Se falhar, manter itens do localStorage
-                console.error('Erro ao sincronizar carrinho:', response.statusText);
+                const errorText = await response.text();
+                console.error('Erro ao sincronizar carrinho:', response.status, errorText);
+                return localItems.length > 0;
             }
         } catch (error) {
             console.error('Erro ao sincronizar carrinho:', error);
             // Em caso de erro, manter itens do localStorage
+            return localItems.length > 0;
+        } finally {
+            this.setLoading(false);
         }
     }
 
     public async addToCart(produto: Produto, quantidade: number = 1): Promise<void> {
         if (this.auth?.user) {
             // Usuário autenticado - usar API
+            this.setLoading(true);
             try {
                 const response = await fetch('/carrinho/adicionar', {
                     method: 'POST',
@@ -221,6 +265,8 @@ class CartStore {
             } catch (error) {
                 console.error('Erro ao adicionar ao carrinho:', error);
                 throw error;
+            } finally {
+                this.setLoading(false);
             }
         } else {
             // Usuário não autenticado - usar localStorage
@@ -250,6 +296,7 @@ class CartStore {
     public async removeFromCart(itemId: number): Promise<void> {
         if (this.auth?.user) {
             // Usuário autenticado - usar API
+            this.setLoading(true);
             try {
                 const response = await fetch(`/carrinho/item/${itemId}`, {
                     method: 'DELETE',
@@ -265,6 +312,8 @@ class CartStore {
             } catch (error) {
                 console.error('Erro ao remover do carrinho:', error);
                 throw error;
+            } finally {
+                this.setLoading(false);
             }
         } else {
             // Usuário não autenticado - usar localStorage
@@ -277,6 +326,7 @@ class CartStore {
     public async updateQuantity(itemId: number, quantidade: number): Promise<void> {
         if (this.auth?.user) {
             // Usuário autenticado - usar API
+            this.setLoading(true);
             try {
                 const response = await fetch(`/carrinho/quantidade/${itemId}`, {
                     method: 'PUT',
@@ -296,6 +346,8 @@ class CartStore {
             } catch (error) {
                 console.error('Erro ao atualizar quantidade:', error);
                 throw error;
+            } finally {
+                this.setLoading(false);
             }
         } else {
             // Usuário não autenticado - usar localStorage
@@ -308,6 +360,7 @@ class CartStore {
     public async clearCart(): Promise<void> {
         if (this.auth?.user) {
             // Usuário autenticado - usar API
+            this.setLoading(true);
             try {
                 const response = await fetch('/carrinho/limpar', {
                     method: 'DELETE',
@@ -323,6 +376,8 @@ class CartStore {
             } catch (error) {
                 console.error('Erro ao limpar carrinho:', error);
                 throw error;
+            } finally {
+                this.setLoading(false);
             }
         } else {
             // Usuário não autenticado - usar localStorage
@@ -348,10 +403,36 @@ class CartStore {
         return this._isInitialized;
     }
 
+    public getIsLoading(): boolean {
+        return this.isLoading;
+    }
+
     // Método para forçar refresh do cache (útil para sincronização manual)
     public async forceRefresh(): Promise<void> {
         this.lastApiCall = 0;
         await this.loadFromAPI();
+    }
+
+    // Método para forçar sincronização do localStorage com API
+    public async forceSync(): Promise<boolean> {
+        if (this.auth?.user) {
+            return await this.syncLocalStorageToAPI();
+        }
+        return false;
+    }
+
+    // Método para verificar se há itens no localStorage
+    public hasLocalItems(): boolean {
+        try {
+            const savedCart = localStorage.getItem('cart');
+            if (savedCart) {
+                const cartItems = JSON.parse(savedCart);
+                return cartItems.length > 0;
+            }
+        } catch (error) {
+            console.error('Erro ao verificar localStorage:', error);
+        }
+        return false;
     }
 }
 

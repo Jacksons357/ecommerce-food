@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Carousel } from '@/components/ui/carousel';
 import { banners } from '@/config/banners';
-import { useCart } from '@/hooks/use-cart-store';
+import { useCartStore } from '@/hooks/use-cart-store';
 import { useToast } from '@/hooks/use-toast';
 import AppLayout from '@/layouts/app-layout';
 import { Head } from '@inertiajs/react';
@@ -25,7 +25,7 @@ interface Props {
 }
 
 export default function Home({ produtos }: Props) {
-    const { addToCart, isLoading } = useCart();
+    const { addToCart, isLoading } = useCartStore();
     const { toast } = useToast();
 
     // Filtrar produtos em destaque

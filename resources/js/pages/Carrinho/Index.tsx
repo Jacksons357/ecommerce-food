@@ -2,7 +2,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { useCart } from '@/hooks/use-cart-store';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { useCartStore } from '@/hooks/use-cart-store';
 import { type SharedData } from '@/types';
 import { Head, router, usePage } from '@inertiajs/react';
 import { motion } from 'framer-motion';
@@ -47,9 +48,10 @@ interface Props {
 export default function CarrinhoIndex({ carrinho }: Props) {
     const page = usePage<SharedData>();
     const { auth } = page.props;
-    const { cartItems, removeFromCart, updateQuantity, clearCart, refreshCart } = useCart();
+    const { items: cartItems, removeFromCart, updateQuantity, clearCart, forceRefresh: refreshCart } = useCartStore();
     const [observacoes, setObservacoes] = useState('');
     const [isFinalizando, setIsFinalizando] = useState(false);
+    const [showClearCartDialog, setShowClearCartDialog] = useState(false);
 
     // Atualizar carrinho quando a página carregar
     useEffect(() => {
@@ -119,8 +121,6 @@ export default function CarrinhoIndex({ carrinho }: Props) {
     };
 
     const limparCarrinho = async () => {
-        if (!confirm('Tem certeza que deseja limpar o carrinho?')) return;
-
         if (auth?.user) {
             // Usuário autenticado - usar API
             try {
@@ -141,6 +141,7 @@ export default function CarrinhoIndex({ carrinho }: Props) {
             // Visitante - usar localStorage
             clearCart();
         }
+        setShowClearCartDialog(false);
     };
 
     const finalizarPedido = async () => {
@@ -218,14 +219,34 @@ export default function CarrinhoIndex({ carrinho }: Props) {
                                 </div>
                             </div>
                             {items.length > 0 && (
-                                <Button
-                                    variant="outline"
-                                    onClick={limparCarrinho}
-                                    className="w-full border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 sm:w-auto"
-                                >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Limpar Carrinho
-                                </Button>
+                                <AlertDialog open={showClearCartDialog} onOpenChange={setShowClearCartDialog}>
+                                    <AlertDialogTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            className="w-full border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 sm:w-auto"
+                                        >
+                                            <Trash2 className="mr-2 h-4 w-4" />
+                                            Limpar Carrinho
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Limpar Carrinho</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                Tem certeza que deseja limpar o carrinho? Esta ação não pode ser desfeita.
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                            <AlertDialogAction
+                                                onClick={limparCarrinho}
+                                                className="bg-red-600 text-white hover:bg-red-700"
+                                            >
+                                                Limpar Carrinho
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
                             )}
                         </motion.div>
 

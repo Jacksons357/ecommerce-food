@@ -56,7 +56,7 @@ export default function Login({ status, canResetPassword }: LoginProps) {
                 },
                 onFinish: () => reset('password'),
             });
-        }, 3000); // 2 segundos de delay
+        }, 4000); // 4 segundos de delay
     };
 
     // Se estiver processando ou mostrando o spinner de sucesso, renderiza apenas ele

@@ -11,7 +11,7 @@ import { NavUser } from './nav-user';
 export function Navbar() {
     const page = usePage<SharedData>();
     const { auth } = page.props;
-    const cartCount = useCartCount();
+    const { cartCount, isLoading } = useCartCount();
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     return (
@@ -53,6 +53,7 @@ export function Navbar() {
                                 variant="ghost"
                                 size="sm"
                                 className="relative flex cursor-pointer items-center gap-1 rounded-md px-2 py-2 text-sm font-medium text-neutral-300 hover:text-neutral-100 sm:gap-2 sm:px-3"
+                                disabled={isLoading}
                             >
                                 <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
                                 <span className="hidden sm:inline">Carrinho</span>
@@ -61,7 +62,7 @@ export function Navbar() {
                                         variant="destructive"
                                         className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
                                     >
-                                        {cartCount}
+                                        {isLoading ? '...' : cartCount}
                                     </Badge>
                                 )}
                             </Button>
