@@ -11,14 +11,14 @@ export function getCSRFToken(): string {
 export function setupCSRF() {
     // Intercepta todas as requisições fetch para adicionar o CSRF token
     const originalFetch = window.fetch;
-    
-    window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
+
+    window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
         // Se não há init, cria um objeto vazio
         const options = init || {};
-        
+
         // Se não há headers, cria um objeto vazio
         const headers = options.headers || {};
-        
+
         // Adiciona o CSRF token se não estiver presente
         const token = getCSRFToken();
         if (token) {
@@ -36,7 +36,7 @@ export function setupCSRF() {
                 }
             }
         }
-        
+
         return originalFetch.call(this, input, options);
     };
 }
@@ -44,4 +44,4 @@ export function setupCSRF() {
 // Configura automaticamente quando o módulo é carregado
 if (typeof window !== 'undefined') {
     setupCSRF();
-} 
+}

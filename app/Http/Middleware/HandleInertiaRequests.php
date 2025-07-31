@@ -50,7 +50,7 @@ class HandleInertiaRequests extends Middleware
                 'user' => $user,
                 'isAdmin' => $isAdmin,
             ],
-            'ziggy' => fn(): array => [
+            'ziggy' => fn (): array => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],

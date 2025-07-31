@@ -3,7 +3,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem, type SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { LayoutGrid, Package, ShoppingBag, Settings } from 'lucide-react';
+import { LayoutGrid, Package, Settings, ShoppingBag } from 'lucide-react';
 import AppLogo from './app-logo';
 
 export function AppSidebar() {
@@ -20,14 +20,11 @@ export function AppSidebar() {
 
     // Adiciona itens específicos para admin
     if (auth?.isAdmin) {
-        mainNavItems.push(
-            {
-                title: 'Gerenciar Produtos',
-                href: '/admin/produtos',
-                icon: Package,
-            },
-
-        );
+        mainNavItems.push({
+            title: 'Gerenciar Produtos',
+            href: '/admin/produtos',
+            icon: Package,
+        });
     } else {
         // Adiciona itens para clientes
         mainNavItems.push(
@@ -40,7 +37,7 @@ export function AppSidebar() {
                 title: 'Configurações',
                 href: '/settings',
                 icon: Settings,
-            }
+            },
         );
     }
 

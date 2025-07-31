@@ -23,10 +23,7 @@ export default function ConfirmPassword() {
     };
 
     return (
-        <AuthLayout
-            title="Confirme sua senha"
-            description="Esta é uma área segura da aplicação. Por favor, confirme sua senha antes de continuar."
-        >
+        <AuthLayout title="Confirme sua senha" description="Esta é uma área segura da aplicação. Por favor, confirme sua senha antes de continuar.">
             <Head title="Confirmar senha" />
 
             <form onSubmit={submit}>

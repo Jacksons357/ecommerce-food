@@ -29,6 +29,9 @@ class CartStore {
     private listeners: CartListener[] = [];
     private auth: { user?: AuthUser } | null = null;
     private _isInitialized = false;
+    private lastApiCall = 0;
+    private apiCacheTimeout = 5000; // 5 segundos de cache
+    private pendingApiCall: Promise<void> | null = null;
 
     private constructor() {
         this.loadFromLocalStorage();
@@ -44,20 +47,20 @@ class CartStore {
     public setAuth(auth: { user?: AuthUser } | null) {
         const wasAuthenticated = this.auth?.user;
         const isNowAuthenticated = auth?.user;
-        
+
         this.auth = auth;
-        
+
         // Se o usuário acabou de fazer login, sincronizar localStorage com banco
         if (!wasAuthenticated && isNowAuthenticated) {
             this.syncLocalStorageToAPI();
-        } else if (isNowAuthenticated) {
-            // Se já estava autenticado, apenas carregar do banco
+        } else if (isNowAuthenticated && !this._isInitialized) {
+            // Se já estava autenticado mas não foi inicializado, apenas carregar do banco
             this.loadFromAPI();
-        } else {
+        } else if (!isNowAuthenticated) {
             // Se não está autenticado, carregar do localStorage
             this.loadFromLocalStorage();
         }
-        
+
         this._isInitialized = true;
     }
 
@@ -65,7 +68,7 @@ class CartStore {
         this.listeners.push(listener);
         // Call immediately with current state
         listener(this.items, this.calculateCount());
-        
+
         // Return unsubscribe function
         return () => {
             const index = this.listeners.indexOf(listener);
@@ -77,7 +80,7 @@ class CartStore {
 
     private notifyListeners() {
         const count = this.calculateCount();
-        this.listeners.forEach(listener => listener(this.items, count));
+        this.listeners.forEach((listener) => listener(this.items, count));
     }
 
     private calculateCount(): number {
@@ -105,7 +108,30 @@ class CartStore {
         }
     }
 
-    private async loadFromAPI() {
+    private async loadFromAPI(): Promise<void> {
+        // Verificar se já existe uma requisição pendente
+        if (this.pendingApiCall) {
+            return this.pendingApiCall;
+        }
+
+        // Verificar cache (5 segundos)
+        const now = Date.now();
+        if (now - this.lastApiCall < this.apiCacheTimeout) {
+            return;
+        }
+
+        // Criar nova requisição
+        this.pendingApiCall = this._loadFromAPI();
+        this.lastApiCall = now;
+
+        try {
+            await this.pendingApiCall;
+        } finally {
+            this.pendingApiCall = null;
+        }
+    }
+
+    private async _loadFromAPI(): Promise<void> {
         try {
             const response = await fetch('/api/cart-data');
             if (response.ok) {
@@ -120,7 +146,7 @@ class CartStore {
 
     private async syncLocalStorageToAPI() {
         const localItems = this.items;
-        
+
         if (localItems.length === 0) {
             // Se não há itens no localStorage, apenas carregar do banco
             await this.loadFromAPI();
@@ -128,25 +154,34 @@ class CartStore {
         }
 
         try {
-                            const response = await fetch('/carrinho/sincronizar', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ items: localItems }),
-                });
+            const response = await fetch('/carrinho/sincronizar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ items: localItems }),
+            });
 
             if (response.ok) {
                 const data = await response.json();
-                this.items = data.carrinho?.items?.map((item: { id: number; produto_id: number; produto: { nome: string; imagem?: string }; preco_unitario: number; quantidade: number }) => ({
-                    id: item.id,
-                    produto_id: item.produto_id,
-                    nome: item.produto.nome,
-                    preco: item.preco_unitario,
-                    quantidade: item.quantidade,
-                    imagem: item.produto.imagem,
-                })) || [];
-                
+                this.items =
+                    data.carrinho?.items?.map(
+                        (item: {
+                            id: number;
+                            produto_id: number;
+                            produto: { nome: string; imagem?: string };
+                            preco_unitario: number;
+                            quantidade: number;
+                        }) => ({
+                            id: item.id,
+                            produto_id: item.produto_id,
+                            nome: item.produto.nome,
+                            preco: item.preco_unitario,
+                            quantidade: item.quantidade,
+                            imagem: item.produto.imagem,
+                        }),
+                    ) || [];
+
                 // Limpar localStorage após sincronização bem-sucedida
                 localStorage.removeItem('cart');
                 this.notifyListeners();
@@ -159,8 +194,6 @@ class CartStore {
             // Em caso de erro, manter itens do localStorage
         }
     }
-
-
 
     public async addToCart(produto: Produto, quantidade: number = 1): Promise<void> {
         if (this.auth?.user) {
@@ -178,6 +211,8 @@ class CartStore {
                 });
 
                 if (response.ok) {
+                    // Invalidar cache e recarregar
+                    this.lastApiCall = 0;
                     await this.loadFromAPI();
                 } else {
                     const errorData = await response.json();
@@ -189,13 +224,11 @@ class CartStore {
             }
         } else {
             // Usuário não autenticado - usar localStorage
-            const existingItem = this.items.find(item => item.produto_id === produto.id);
-            
+            const existingItem = this.items.find((item) => item.produto_id === produto.id);
+
             if (existingItem) {
-                this.items = this.items.map(item =>
-                    item.produto_id === produto.id
-                        ? { ...item, quantidade: item.quantidade + quantidade }
-                        : item
+                this.items = this.items.map((item) =>
+                    item.produto_id === produto.id ? { ...item, quantidade: item.quantidade + quantidade } : item,
                 );
             } else {
                 const newItem: CartItem = {
@@ -208,7 +241,7 @@ class CartStore {
                 };
                 this.items = [...this.items, newItem];
             }
-            
+
             this.saveToLocalStorage();
             this.notifyListeners();
         }
@@ -223,6 +256,8 @@ class CartStore {
                 });
 
                 if (response.ok) {
+                    // Invalidar cache e recarregar
+                    this.lastApiCall = 0;
                     await this.loadFromAPI();
                 } else {
                     throw new Error('Erro ao remover item do carrinho');
@@ -233,7 +268,7 @@ class CartStore {
             }
         } else {
             // Usuário não autenticado - usar localStorage
-            this.items = this.items.filter(item => item.id !== itemId);
+            this.items = this.items.filter((item) => item.id !== itemId);
             this.saveToLocalStorage();
             this.notifyListeners();
         }
@@ -252,6 +287,8 @@ class CartStore {
                 });
 
                 if (response.ok) {
+                    // Invalidar cache e recarregar
+                    this.lastApiCall = 0;
                     await this.loadFromAPI();
                 } else {
                     throw new Error('Erro ao atualizar quantidade');
@@ -262,9 +299,7 @@ class CartStore {
             }
         } else {
             // Usuário não autenticado - usar localStorage
-            this.items = this.items.map(item =>
-                item.id === itemId ? { ...item, quantidade } : item
-            );
+            this.items = this.items.map((item) => (item.id === itemId ? { ...item, quantidade } : item));
             this.saveToLocalStorage();
             this.notifyListeners();
         }
@@ -279,6 +314,8 @@ class CartStore {
                 });
 
                 if (response.ok) {
+                    // Invalidar cache e recarregar
+                    this.lastApiCall = 0;
                     await this.loadFromAPI();
                 } else {
                     throw new Error('Erro ao limpar carrinho');
@@ -304,13 +341,19 @@ class CartStore {
     }
 
     public getTotal(): number {
-        return this.items.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
+        return this.items.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
     }
 
     public isInitialized(): boolean {
         return this._isInitialized;
     }
+
+    // Método para forçar refresh do cache (útil para sincronização manual)
+    public async forceRefresh(): Promise<void> {
+        this.lastApiCall = 0;
+        await this.loadFromAPI();
+    }
 }
 
 export const cartStore = CartStore.getInstance();
-export type { CartItem, Produto, AuthUser }; 
+export type { AuthUser, CartItem, Produto };

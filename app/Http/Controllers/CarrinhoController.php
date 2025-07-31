@@ -6,11 +6,11 @@ use App\Models\Carrinho;
 use App\Models\CarrinhoItem;
 use App\Models\Produto;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 
 class CarrinhoController extends Controller
 {
-
     /**
      * Exibe o carrinho do usuário
      */
@@ -19,7 +19,7 @@ class CarrinhoController extends Controller
         $usuario = auth()->user();
         $carrinho = $usuario->carrinho;
 
-        if (!$carrinho) {
+        if (! $carrinho) {
             $carrinho = Carrinho::create(['usuario_id' => $usuario->id]);
         }
 
@@ -44,16 +44,16 @@ class CarrinhoController extends Controller
         $produto = Produto::findOrFail($request->produto_id);
 
         // Verifica se o produto está ativo
-        if (!$produto->ativo) {
+        if (! $produto->ativo) {
             return response()->json([
                 'success' => false,
-                'message' => 'Produto não está disponível'
+                'message' => 'Produto não está disponível',
             ], 400);
         }
 
         // Busca ou cria carrinho
         $carrinho = $usuario->carrinho;
-        if (!$carrinho) {
+        if (! $carrinho) {
             $carrinho = Carrinho::create(['usuario_id' => $usuario->id]);
         }
 
@@ -63,7 +63,7 @@ class CarrinhoController extends Controller
         if ($itemExistente) {
             // Atualiza quantidade
             $itemExistente->update([
-                'quantidade' => $itemExistente->quantidade + $request->quantidade
+                'quantidade' => $itemExistente->quantidade + $request->quantidade,
             ]);
         } else {
             // Cria novo item
@@ -74,6 +74,10 @@ class CarrinhoController extends Controller
                 'preco_unitario' => $produto->preco,
             ]);
         }
+
+        // Invalidar cache do carrinho
+        $cacheKey = "cart_data_{$usuario->id}";
+        Cache::forget($cacheKey);
 
         $carrinho->load('items.produto');
 
@@ -99,11 +103,15 @@ class CarrinhoController extends Controller
         if ($item->carrinho->usuario_id !== $usuario->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Item não pertence ao seu carrinho'
+                'message' => 'Item não pertence ao seu carrinho',
             ], 403);
         }
 
         $item->update(['quantidade' => $request->quantidade]);
+
+        // Invalidar cache do carrinho
+        $cacheKey = "cart_data_{$usuario->id}";
+        Cache::forget($cacheKey);
 
         $carrinho = $usuario->carrinho->load('items.produto');
 
@@ -124,11 +132,15 @@ class CarrinhoController extends Controller
         if ($item->carrinho->usuario_id !== $usuario->id) {
             return response()->json([
                 'success' => false,
-                'message' => 'Item não pertence ao seu carrinho'
+                'message' => 'Item não pertence ao seu carrinho',
             ], 403);
         }
 
         $item->delete();
+
+        // Invalidar cache do carrinho
+        $cacheKey = "cart_data_{$usuario->id}";
+        Cache::forget($cacheKey);
 
         $carrinho = $usuario->carrinho->load('items.produto');
 
@@ -151,6 +163,10 @@ class CarrinhoController extends Controller
             $carrinho->items()->delete();
         }
 
+        // Invalidar cache do carrinho
+        $cacheKey = "cart_data_{$usuario->id}";
+        Cache::forget($cacheKey);
+
         return response()->json([
             'success' => true,
             'message' => 'Carrinho limpo com sucesso!',
@@ -172,7 +188,7 @@ class CarrinhoController extends Controller
 
         // Busca ou cria carrinho
         $carrinho = $usuario->carrinho;
-        if (!$carrinho) {
+        if (! $carrinho) {
             $carrinho = Carrinho::create(['usuario_id' => $usuario->id]);
         }
 
@@ -192,6 +208,10 @@ class CarrinhoController extends Controller
                 ]);
             }
         }
+
+        // Invalidar cache do carrinho
+        $cacheKey = "cart_data_{$usuario->id}";
+        Cache::forget($cacheKey);
 
         $carrinho->load('items.produto');
 

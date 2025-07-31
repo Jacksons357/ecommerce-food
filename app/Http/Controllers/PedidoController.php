@@ -2,16 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Carrinho;
 use App\Models\Pedido;
 use App\Models\PedidoItem;
-use App\Models\Carrinho;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
 use Illuminate\Support\Facades\DB;
+use Inertia\Inertia;
 
 class PedidoController extends Controller
 {
-
     /**
      * Exibe pedidos do usuário
      */
@@ -24,6 +23,7 @@ class PedidoController extends Controller
             ->get()
             ->map(function ($pedido) {
                 $pedido->items_count = $pedido->items->sum('quantidade');
+
                 return $pedido;
             });
 
@@ -58,10 +58,10 @@ class PedidoController extends Controller
         $usuario = auth()->user();
         $carrinho = $usuario->carrinho;
 
-        if (!$carrinho || $carrinho->items->isEmpty()) {
+        if (! $carrinho || $carrinho->items->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Carrinho vazio!'
+                'message' => 'Carrinho vazio!',
             ], 400);
         }
 
@@ -101,7 +101,7 @@ class PedidoController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Erro ao finalizar pedido!'
+                'message' => 'Erro ao finalizar pedido!',
             ], 500);
         }
     }
@@ -131,7 +131,7 @@ class PedidoController extends Controller
         $usuario = auth()->user();
 
         // Verifica se o usuário pode ver este pedido
-        if (!$usuario->isAdmin() && $pedido->usuario_id !== $usuario->id) {
+        if (! $usuario->isAdmin() && $pedido->usuario_id !== $usuario->id) {
             abort(403);
         }
 

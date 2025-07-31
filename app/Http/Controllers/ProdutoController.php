@@ -4,13 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Produto;
 use Illuminate\Http\Request;
-use Inertia\Inertia;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Inertia\Inertia;
 
 class ProdutoController extends Controller
 {
-
     /**
      * Display a listing of the resource.
      */
@@ -104,7 +103,7 @@ class ProdutoController extends Controller
             'breadcrumbs' => [
                 ['title' => 'Dashboard', 'href' => '/dashboard'],
                 ['title' => 'Produtos', 'href' => '/admin/produtos'],
-                ['title' => 'Editar ' . $produto->nome, 'href' => "/admin/produtos/{$produto->id}/edit"],
+                ['title' => 'Editar '.$produto->nome, 'href' => "/admin/produtos/{$produto->id}/edit"],
             ],
         ]);
     }
@@ -154,7 +153,7 @@ class ProdutoController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Produto atualizado com sucesso!',
-                'produto' => $produto->fresh()
+                'produto' => $produto->fresh(),
             ]);
         }
 
@@ -167,7 +166,7 @@ class ProdutoController extends Controller
      */
     public function destroy(Produto $produto)
     {
-        if ($produto->imagem && !filter_var($produto->imagem, FILTER_VALIDATE_URL)) {
+        if ($produto->imagem && ! filter_var($produto->imagem, FILTER_VALIDATE_URL)) {
             Storage::disk('public')->delete($produto->imagem);
         }
 
@@ -177,7 +176,7 @@ class ProdutoController extends Controller
         if (request()->expectsJson()) {
             return response()->json([
                 'success' => true,
-                'message' => 'Produto excluído com sucesso!'
+                'message' => 'Produto excluído com sucesso!',
             ]);
         }
 
@@ -191,12 +190,12 @@ class ProdutoController extends Controller
     public function toggleDestaque(Produto $produto)
     {
         $produto->update([
-            'destaque_dia' => !$produto->destaque_dia
+            'destaque_dia' => ! $produto->destaque_dia,
         ]);
 
         return response()->json([
             'success' => true,
-            'destaque_dia' => $produto->destaque_dia
+            'destaque_dia' => $produto->destaque_dia,
         ]);
     }
 }

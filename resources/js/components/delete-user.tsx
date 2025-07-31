@@ -46,8 +46,8 @@ export default function DeleteUser() {
                     <DialogContent>
                         <DialogTitle>Tem certeza de que deseja excluir sua conta?</DialogTitle>
                         <DialogDescription>
-                            Depois que sua conta for excluída, todos os seus recursos e dados também serão permanentemente excluídos. Por favor, digite sua senha
-                            para confirmar que deseja excluir permanentemente sua conta.
+                            Depois que sua conta for excluída, todos os seus recursos e dados também serão permanentemente excluídos. Por favor,
+                            digite sua senha para confirmar que deseja excluir permanentemente sua conta.
                         </DialogDescription>
                         <form className="space-y-6" onSubmit={deleteUser}>
                             <div className="grid gap-2">

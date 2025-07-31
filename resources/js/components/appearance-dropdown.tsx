@@ -4,7 +4,6 @@ import { Sun } from 'lucide-react';
 import { HTMLAttributes } from 'react';
 
 export default function AppearanceToggleDropdown({ className = '', ...props }: HTMLAttributes<HTMLDivElement>) {
-
     return (
         <div className={className} {...props}>
             <DropdownMenu>

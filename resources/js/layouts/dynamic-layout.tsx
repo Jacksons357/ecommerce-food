@@ -1,5 +1,5 @@
+import { type BreadcrumbItem, type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
-import { type SharedData, type BreadcrumbItem } from '@/types';
 import { type ReactNode } from 'react';
 import AppSidebarLayout from './app/app-sidebar-layout';
 import ClientLayout from './client/client-layout';
@@ -18,7 +18,7 @@ export default function DynamicLayout({ children, breadcrumbs, ...props }: Dynam
         isAdmin: auth?.isAdmin,
         user: auth?.user?.name,
         tipo_usuario: auth?.user?.tipo_usuario,
-        url: page.url
+        url: page.url,
     });
 
     // Se for admin, usa o layout com sidebar
@@ -33,9 +33,5 @@ export default function DynamicLayout({ children, breadcrumbs, ...props }: Dynam
 
     // Se não for admin ou não estiver autenticado, usa o layout com navbar
     console.log('Usando ClientLayout');
-    return (
-        <ClientLayout>
-            {children}
-        </ClientLayout>
-    );
-} 
+    return <ClientLayout>{children}</ClientLayout>;
+}

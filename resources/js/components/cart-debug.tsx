@@ -1,8 +1,7 @@
-import React from 'react';
-import { useCart } from '@/hooks/use-cart-store';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { useCart } from '@/hooks/use-cart-store';
 
 export function CartDebug() {
     const { cartItems, cartCount, isLoading, addToCart, removeFromCart, updateQuantity, clearCart } = useCart();
@@ -10,7 +9,7 @@ export function CartDebug() {
     const testProduct = {
         id: 1,
         nome: 'Produto Teste',
-        preco: 10.50,
+        preco: 10.5,
         imagem: '/images/banners/capa1.png',
     };
 
@@ -24,22 +23,11 @@ export function CartDebug() {
             </CardHeader>
             <CardContent className="space-y-4">
                 <div className="space-y-2">
-                    <Button
-                        onClick={() => addToCart(testProduct, 1)}
-                        disabled={isLoading}
-                        size="sm"
-                        className="w-full"
-                    >
+                    <Button onClick={() => addToCart(testProduct, 1)} disabled={isLoading} size="sm" className="w-full">
                         {isLoading ? 'Adicionando...' : 'Adicionar Produto Teste'}
                     </Button>
-                    
-                    <Button
-                        onClick={() => clearCart()}
-                        disabled={isLoading}
-                        size="sm"
-                        variant="destructive"
-                        className="w-full"
-                    >
+
+                    <Button onClick={() => clearCart()} disabled={isLoading} size="sm" variant="destructive" className="w-full">
                         {isLoading ? 'Limpando...' : 'Limpar Carrinho'}
                     </Button>
                 </div>
@@ -51,7 +39,7 @@ export function CartDebug() {
                     ) : (
                         <div className="space-y-2">
                             {cartItems.map((item) => (
-                                <div key={item.id} className="flex items-center justify-between p-2 border border-slate-700 rounded bg-slate-800/50">
+                                <div key={item.id} className="flex items-center justify-between rounded border border-slate-700 bg-slate-800/50 p-2">
                                     <div className="flex-1">
                                         <p className="font-medium text-neutral-100">{item.nome}</p>
                                         <p className="text-sm text-neutral-400">
@@ -76,12 +64,7 @@ export function CartDebug() {
                                         >
                                             +
                                         </Button>
-                                        <Button
-                                            size="sm"
-                                            variant="destructive"
-                                            onClick={() => removeFromCart(item.id)}
-                                            disabled={isLoading}
-                                        >
+                                        <Button size="sm" variant="destructive" onClick={() => removeFromCart(item.id)} disabled={isLoading}>
                                             X
                                         </Button>
                                     </div>
@@ -91,12 +74,12 @@ export function CartDebug() {
                     )}
                 </div>
 
-                <div className="pt-2 border-t border-slate-700">
+                <div className="border-t border-slate-700 pt-2">
                     <p className="text-sm text-neutral-100">
-                        <strong>Total:</strong> R$ {cartItems.reduce((sum, item) => sum + (item.preco * item.quantidade), 0).toFixed(2)}
+                        <strong>Total:</strong> R$ {cartItems.reduce((sum, item) => sum + item.preco * item.quantidade, 0).toFixed(2)}
                     </p>
                 </div>
             </CardContent>
         </Card>
     );
-} 
+}

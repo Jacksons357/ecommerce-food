@@ -15,7 +15,7 @@ class ClienteMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || !auth()->user()->isCliente()) {
+        if (! auth()->check() || ! auth()->user()->isCliente()) {
             abort(403, 'Acesso negado. Apenas clientes podem acessar esta área.');
         }
 

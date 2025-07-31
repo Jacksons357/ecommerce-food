@@ -125,12 +125,14 @@
 
     /* Melhorar a acessibilidade de foco */
     *:focus-visible {
-        @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+        @apply ring-2 ring-ring ring-offset-2 ring-offset-background outline-none;
     }
 
     /* Melhorar a experiência de toque em dispositivos móveis */
     @media (hover: none) and (pointer: coarse) {
-        button, a, [role="button"] {
+        button,
+        a,
+        [role='button'] {
             @apply min-h-[44px] min-w-[44px];
         }
     }
@@ -138,19 +140,19 @@
 
 /* Estilos customizados para melhorar a legibilidade */
 .btn-primary {
-    @apply bg-red-700 hover:bg-red-800 text-neutral-100 font-medium px-4 py-2 rounded-md transition-colors duration-200;
+    @apply rounded-md bg-red-700 px-4 py-2 font-medium text-neutral-100 transition-colors duration-200 hover:bg-red-800;
 }
 
 .btn-secondary {
-    @apply bg-slate-800 hover:bg-slate-700 text-neutral-100 font-medium px-4 py-2 rounded-md transition-colors duration-200;
+    @apply rounded-md bg-slate-800 px-4 py-2 font-medium text-neutral-100 transition-colors duration-200 hover:bg-slate-700;
 }
 
 .card {
-    @apply bg-slate-800 border border-slate-700 rounded-lg p-6;
+    @apply rounded-lg border border-slate-700 bg-slate-800 p-6;
 }
 
 .section-highlight {
-    @apply bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-4;
+    @apply rounded-lg border border-yellow-500/20 bg-yellow-500/10 p-4;
 }
 
 /* Utilitários responsivos adicionais */

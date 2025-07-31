@@ -1,14 +1,14 @@
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar } from '@/components/ui/sidebar';
 import { UserInfo } from '@/components/user-info';
 import { UserMenuContent } from '@/components/user-menu-content';
+import { useInitials } from '@/hooks/use-initials';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { type SharedData } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { ChevronsUpDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { useInitials } from '@/hooks/use-initials';
 
 export function NavUser() {
     const { auth } = usePage<SharedData>().props;
@@ -57,22 +57,22 @@ function NavUserWithoutSidebar() {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm" className="flex items-center gap-1 sm:gap-2 cursor-pointer text-neutral-300 hover:text-neutral-100 p-1 sm:p-2">
-                    <Avatar className="size-6 sm:size-8 overflow-hidden rounded-full">
+                <Button
+                    variant="ghost"
+                    size="sm"
+                    className="flex cursor-pointer items-center gap-1 p-1 text-neutral-300 hover:text-neutral-100 sm:gap-2 sm:p-2"
+                >
+                    <Avatar className="size-6 overflow-hidden rounded-full sm:size-8">
                         <AvatarImage src={auth.user.avatar} alt={auth.user.name} />
-                        <AvatarFallback className="rounded-lg bg-slate-700 text-neutral-100 text-xs sm:text-sm">
+                        <AvatarFallback className="rounded-lg bg-slate-700 text-xs text-neutral-100 sm:text-sm">
                             {getInitials(auth.user.name)}
                         </AvatarFallback>
                     </Avatar>
-                    <span className="hidden sm:inline text-sm font-medium">{auth.user.name}</span>
+                    <span className="hidden text-sm font-medium sm:inline">{auth.user.name}</span>
                     <ChevronsUpDown className="h-3 w-3 sm:h-4 sm:w-4" />
                 </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent
-                className="w-56 rounded-lg"
-                align="end"
-                side="bottom"
-            >
+            <DropdownMenuContent className="w-56 rounded-lg" align="end" side="bottom">
                 <UserMenuContent user={auth.user} />
             </DropdownMenuContent>
         </DropdownMenu>

@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { usePage } from '@inertiajs/react';
-import { type SharedData } from '@/types';
 import { cartStore, type CartItem, type Produto } from '@/stores/cartStore';
+import { type SharedData } from '@/types';
+import { usePage } from '@inertiajs/react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export function useCart() {
     const page = usePage<SharedData>();
@@ -92,4 +92,4 @@ export function useCart() {
         clearCart,
         refreshCart,
     };
-} 
+}

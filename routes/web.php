@@ -1,12 +1,14 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Inertia\Inertia;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\ProdutoController;
 use App\Http\Controllers\CarrinhoController;
 use App\Http\Controllers\CarrinhoPublicoController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\PedidoController;
+use App\Http\Controllers\ProdutoController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 // Rota principal
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -25,19 +27,20 @@ Route::get('/contato', function () {
 
 // API para verificar tipo de usuário
 Route::get('/api/user-type', function () {
-    if (!auth()->check()) {
+    if (! Auth::check()) {
         return response()->json(['tipo_usuario' => null]);
     }
-    return response()->json(['tipo_usuario' => auth()->user()->tipo_usuario]);
+
+    return response()->json(['tipo_usuario' => Auth::user()->tipo_usuario]);
 })->name('api.user-type');
 
 // API para contador do carrinho
 Route::get('/api/cart-count', function () {
-    if (!auth()->check()) {
+    if (! Auth::check()) {
         return response()->json(['count' => 0]);
     }
 
-    $carrinho = auth()->user()->carrinho;
+    $carrinho = Auth::user()->carrinho;
     $count = $carrinho ? $carrinho->items()->sum('quantidade') : 0;
 
     return response()->json(['count' => $count]);
@@ -45,13 +48,25 @@ Route::get('/api/cart-count', function () {
 
 // API para dados completos do carrinho
 Route::get('/api/cart-data', function () {
-    if (!auth()->check()) {
+    if (! Auth::check()) {
         return response()->json(['items' => [], 'count' => 0, 'total' => 0]);
     }
 
-    $carrinho = auth()->user()->carrinho;
-    if (!$carrinho) {
-        return response()->json(['items' => [], 'count' => 0, 'total' => 0]);
+    $userId = Auth::id();
+    $cacheKey = "cart_data_{$userId}";
+
+    // Tentar buscar do cache primeiro
+    $cachedData = Cache::get($cacheKey);
+    if ($cachedData) {
+        return response()->json($cachedData);
+    }
+
+    $carrinho = Auth::user()->carrinho;
+    if (! $carrinho) {
+        $data = ['items' => [], 'count' => 0, 'total' => 0];
+        Cache::put($cacheKey, $data, now()->addSeconds(5)); // Cache por 5 segundos
+
+        return response()->json($data);
     }
 
     $carrinho->load('items.produto');
@@ -71,11 +86,16 @@ Route::get('/api/cart-data', function () {
         return $item['preco'] * $item['quantidade'];
     });
 
-    return response()->json([
+    $data = [
         'items' => $items,
         'count' => $count,
         'total' => $total,
-    ]);
+    ];
+
+    // Salvar no cache por 5 segundos
+    Cache::put($cacheKey, $data, now()->addSeconds(5));
+
+    return response()->json($data);
 })->name('api.cart-data');
 
 // Rotas públicas do carrinho (localStorage)
@@ -89,7 +109,7 @@ Route::prefix('carrinho-publico')->name('carrinho-publico.')->group(function () 
 Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard dinâmico baseado no tipo de usuário
     Route::get('dashboard', function () {
-        $user = auth()->user();
+        $user = Auth::user();
         $isAdmin = $user->isAdmin();
 
         if ($isAdmin) {
@@ -143,7 +163,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         // Rota de teste
         Route::get('test', function () {
             return Inertia::render('Admin/Test', [
-                'message' => 'Middleware admin funcionando!'
+                'message' => 'Middleware admin funcionando!',
             ]);
         })->name('test');
 
@@ -157,5 +177,5 @@ Route::middleware(['auth', 'verified'])->group(function () {
     });
 });
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/auth.php';
+require __DIR__.'/settings.php';
+require __DIR__.'/auth.php';

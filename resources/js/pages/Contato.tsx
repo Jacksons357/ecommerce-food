@@ -1,48 +1,38 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Mail, Phone, MapPin } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Mail, MapPin, Phone } from 'lucide-react';
 
 export default function Contato() {
     return (
-        <div className="max-w-4xl mx-auto px-4 py-8">
-            <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold text-neutral-100 mb-4">
-                    Entre em Contato
-                </h1>
-                <p className="text-neutral-300">
-                    Tem alguma dúvida? Estamos aqui para ajudar!
-                </p>
+        <div className="mx-auto max-w-4xl px-4 py-8">
+            <div className="mb-8 text-center">
+                <h1 className="mb-4 text-3xl font-bold text-neutral-100">Entre em Contato</h1>
+                <p className="text-neutral-300">Tem alguma dúvida? Estamos aqui para ajudar!</p>
             </div>
 
-            <div className="grid md:grid-cols-2 gap-8">
+            <div className="grid gap-8 md:grid-cols-2">
                 {/* Informações de contato */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Informações de Contato</CardTitle>
-                        <CardDescription>
-                            Entre em contato conosco através dos canais abaixo
-                        </CardDescription>
+                        <CardDescription>Entre em contato conosco através dos canais abaixo</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="flex items-center space-x-3">
                             <Mail className="h-5 w-5 text-neutral-400" />
                             <div>
                                 <p className="font-medium text-neutral-100">Email</p>
-                                <p className="text-sm text-neutral-400">
-                                    contato@ecommerce.com
-                                </p>
+                                <p className="text-sm text-neutral-400">contato@ecommerce.com</p>
                             </div>
                         </div>
                         <div className="flex items-center space-x-3">
                             <Phone className="h-5 w-5 text-neutral-400" />
                             <div>
                                 <p className="font-medium text-neutral-100">Telefone</p>
-                                <p className="text-sm text-neutral-400">
-                                    (11) 99999-9999
-                                </p>
+                                <p className="text-sm text-neutral-400">(11) 99999-9999</p>
                             </div>
                         </div>
                         <div className="flex items-center space-x-3">
@@ -50,7 +40,8 @@ export default function Contato() {
                             <div>
                                 <p className="font-medium text-neutral-100">Endereço</p>
                                 <p className="text-sm text-neutral-400">
-                                    Rua das Flores, 123<br />
+                                    Rua das Flores, 123
+                                    <br />
                                     São Paulo - SP, 01234-567
                                 </p>
                             </div>
@@ -62,9 +53,7 @@ export default function Contato() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Envie uma Mensagem</CardTitle>
-                        <CardDescription>
-                            Preencha o formulário abaixo e entraremos em contato
-                        </CardDescription>
+                        <CardDescription>Preencha o formulário abaixo e entraremos em contato</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form className="space-y-4">
@@ -82,11 +71,7 @@ export default function Contato() {
                             </div>
                             <div>
                                 <Label htmlFor="message">Mensagem</Label>
-                                <Textarea 
-                                    id="message" 
-                                    placeholder="Digite sua mensagem aqui..."
-                                    rows={4}
-                                />
+                                <Textarea id="message" placeholder="Digite sua mensagem aqui..." rows={4} />
                             </div>
                             <Button type="submit" className="w-full">
                                 Enviar Mensagem
@@ -97,4 +82,4 @@ export default function Contato() {
             </div>
         </div>
     );
-} 
+}

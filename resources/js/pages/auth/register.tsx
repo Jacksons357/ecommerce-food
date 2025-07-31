@@ -1,5 +1,5 @@
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle, CheckCircle } from 'lucide-react';
+import { CheckCircle, LoaderCircle } from 'lucide-react';
 import { FormEventHandler, useState } from 'react';
 
 import InputError from '@/components/input-error';
@@ -18,7 +18,7 @@ type RegisterForm = {
 export default function Register() {
     const [showSuccessSpinner, setShowSuccessSpinner] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
-    
+
     const { data, setData, post, processing, errors, reset } = useForm<Required<RegisterForm>>({
         name: '',
         email: '',
@@ -32,7 +32,7 @@ export default function Register() {
             onSuccess: () => {
                 setSuccessMessage('Conta criada com sucesso! Redirecionando...');
                 setShowSuccessSpinner(true);
-                
+
                 // Esconde o spinner após 5 segundos
                 setTimeout(() => {
                     setShowSuccessSpinner(false);
@@ -46,12 +46,12 @@ export default function Register() {
     // Se estiver mostrando o spinner de sucesso, renderiza apenas ele
     if (showSuccessSpinner) {
         return (
-            <div className="grid grid-cols-1 lg:grid-cols-2 h-screen">
-                <div className="hidden lg:flex flex-col items-center justify-center bg-neutral-900">
+            <div className="grid h-screen grid-cols-1 lg:grid-cols-2">
+                <div className="hidden flex-col items-center justify-center bg-neutral-900 lg:flex">
                     <img src="/images/logo_burguer.png" alt="Logo" className="" />
                 </div>
 
-                <div className=' flex items-center justify-center p-6'>
+                <div className="flex items-center justify-center p-6">
                     <div className="w-full max-w-sm">
                         <div className="flex flex-col items-center gap-8">
                             <div className="flex flex-col items-center gap-4">
@@ -60,15 +60,15 @@ export default function Register() {
                                 </div>
                             </div>
 
-                            <div className="text-center space-y-6">
+                            <div className="space-y-6 text-center">
                                 <div className="flex justify-center">
                                     <div className="relative">
-                                        <CheckCircle className="h-16 w-16 text-green-500 animate-pulse" />
-                                        <LoaderCircle className="h-20 w-20 text-red-600 animate-spin absolute inset-0 m-auto" />
+                                        <CheckCircle className="h-16 w-16 animate-pulse text-green-500" />
+                                        <LoaderCircle className="absolute inset-0 m-auto h-20 w-20 animate-spin text-red-600" />
                                     </div>
                                 </div>
                                 <div>
-                                    <h2 className="text-xl font-medium text-neutral-100 mb-2">Conta Criada!</h2>
+                                    <h2 className="mb-2 text-xl font-medium text-neutral-100">Conta Criada!</h2>
                                     <p className="text-sm text-neutral-300">{successMessage}</p>
                                 </div>
                             </div>
@@ -80,12 +80,12 @@ export default function Register() {
     }
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 h-screen">
-            <div className="hidden lg:flex flex-col items-center justify-center bg-neutral-900">
+        <div className="grid h-screen grid-cols-1 lg:grid-cols-2">
+            <div className="hidden flex-col items-center justify-center bg-neutral-900 lg:flex">
                 <img src="/images/logo_burguer.png" alt="Logo" className="" />
             </div>
 
-            <div className=' flex items-center justify-center p-6'>
+            <div className="flex items-center justify-center p-6">
                 <div className="w-full max-w-sm">
                     <div className="flex flex-col gap-8">
                         <div className="flex flex-col items-center gap-4">
@@ -118,7 +118,7 @@ export default function Register() {
                                         onChange={(e) => setData('name', e.target.value)}
                                         disabled={processing}
                                         placeholder="Nome completo"
-                                        className="bg-slate-800 border-slate-700 text-neutral-100"
+                                        className="border-slate-700 bg-slate-800 text-neutral-100"
                                     />
                                     <InputError message={errors.name} className="mt-2" />
                                 </div>
@@ -135,7 +135,7 @@ export default function Register() {
                                         onChange={(e) => setData('email', e.target.value)}
                                         disabled={processing}
                                         placeholder="email@exemplo.com"
-                                        className="bg-slate-800 border-slate-700 text-neutral-100"
+                                        className="border-slate-700 bg-slate-800 text-neutral-100"
                                     />
                                     <InputError message={errors.email} />
                                 </div>
@@ -152,7 +152,7 @@ export default function Register() {
                                         onChange={(e) => setData('password', e.target.value)}
                                         disabled={processing}
                                         placeholder="Senha"
-                                        className="bg-slate-800 border-slate-700 text-neutral-100"
+                                        className="border-slate-700 bg-slate-800 text-neutral-100"
                                     />
                                     <InputError message={errors.password} />
                                 </div>
@@ -169,7 +169,7 @@ export default function Register() {
                                         onChange={(e) => setData('password_confirmation', e.target.value)}
                                         disabled={processing}
                                         placeholder="Confirmar senha"
-                                        className="bg-slate-800 border-slate-700 text-neutral-100"
+                                        className="border-slate-700 bg-slate-800 text-neutral-100"
                                     />
                                     <InputError message={errors.password_confirmation} />
                                 </div>

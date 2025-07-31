@@ -130,12 +130,12 @@ export function AppHeader({ breadcrumbs = [] }: AppHeaderProps) {
                             <Button variant="ghost" size="icon" className="group h-9 w-9 cursor-pointer">
                                 <Search className="!size-5 opacity-80 group-hover:opacity-100" />
                             </Button>
-                            
+
                             {/* Cart Icon - Only show if user is authenticated */}
                             {auth.user && (
                                 <Link href="/carrinho" prefetch className="cursor-pointer">
-                                    <Button variant="ghost" size="icon" className="group h-9 w-9 cursor-pointer relative">
-                                        <ShoppingCart className="!size-5 opacity-80 group-hover:opacity-100 cursor-pointer" />
+                                    <Button variant="ghost" size="icon" className="group relative h-9 w-9 cursor-pointer">
+                                        <ShoppingCart className="!size-5 cursor-pointer opacity-80 group-hover:opacity-100" />
                                         <CartCounter />
                                     </Button>
                                 </Link>

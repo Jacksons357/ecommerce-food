@@ -1,474 +1,473 @@
-import { motion } from 'framer-motion';
-import { useState, useEffect } from 'react';
-import { Head, router, usePage } from '@inertiajs/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { 
-  ShoppingCart, 
-  Trash2, 
-  Plus, 
-  Minus, 
-  ArrowLeft,
-  CreditCard,
-  LogIn,
-  Clock
-} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
 import { useCart } from '@/hooks/use-cart-store';
 import { type SharedData } from '@/types';
+import { Head, router, usePage } from '@inertiajs/react';
+import { motion } from 'framer-motion';
+import { ArrowLeft, Clock, CreditCard, LogIn, Minus, Plus, ShoppingCart, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface Produto {
-  id: number;
-  nome: string;
-  descricao: string;
-  preco: number;
-  imagem: string;
+    id: number;
+    nome: string;
+    descricao: string;
+    preco: number;
+    imagem: string;
 }
 
 interface CarrinhoItem {
-  id: number;
-  quantidade: number;
-  preco_unitario: number;
-  produto: Produto;
+    id: number;
+    quantidade: number;
+    preco_unitario: number;
+    produto: Produto;
 }
 
 interface CartItem {
-  id: number;
-  produto_id: number;
-  nome: string;
-  preco: number;
-  quantidade: number;
-  imagem?: string;
+    id: number;
+    produto_id: number;
+    nome: string;
+    preco: number;
+    quantidade: number;
+    imagem?: string;
 }
 
 interface Carrinho {
-  id: number;
-  items: CarrinhoItem[];
-  total: number;
-  quantidade_total: number;
+    id: number;
+    items: CarrinhoItem[];
+    total: number;
+    quantidade_total: number;
 }
 
 interface Props {
-  carrinho?: Carrinho;
+    carrinho?: Carrinho;
 }
 
 export default function CarrinhoIndex({ carrinho }: Props) {
-  const page = usePage<SharedData>();
-  const { auth } = page.props;
-  const { cartItems, removeFromCart, updateQuantity, clearCart, refreshCart } = useCart();
-  const [observacoes, setObservacoes] = useState('');
-  const [isFinalizando, setIsFinalizando] = useState(false);
+    const page = usePage<SharedData>();
+    const { auth } = page.props;
+    const { cartItems, removeFromCart, updateQuantity, clearCart, refreshCart } = useCart();
+    const [observacoes, setObservacoes] = useState('');
+    const [isFinalizando, setIsFinalizando] = useState(false);
 
-  // Atualizar carrinho quando a página carregar
-  useEffect(() => {
-    refreshCart();
-  }, [refreshCart]);
+    // Atualizar carrinho quando a página carregar
+    useEffect(() => {
+        refreshCart();
+    }, [refreshCart]);
 
-  // Type guard para verificar se é CarrinhoItem
-  const isCarrinhoItem = (item: CarrinhoItem | CartItem): item is CarrinhoItem => {
-    return 'produto' in item;
-  };
+    // Type guard para verificar se é CarrinhoItem
+    const isCarrinhoItem = (item: CarrinhoItem | CartItem): item is CarrinhoItem => {
+        return 'produto' in item;
+    };
 
-  // Usar dados do carrinho autenticado ou do localStorage
-  const items = auth?.user ? (carrinho?.items || []) : cartItems;
-  const total = auth?.user ? (carrinho?.total || 0) : cartItems.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
-  const quantidadeTotal = auth?.user ? (carrinho?.quantidade_total || 0) : cartItems.reduce((sum, item) => sum + item.quantidade, 0);
+    // Usar dados do carrinho autenticado ou do localStorage
+    const items = auth?.user ? carrinho?.items || [] : cartItems;
+    const total = auth?.user ? carrinho?.total || 0 : cartItems.reduce((sum, item) => sum + item.preco * item.quantidade, 0);
+    const quantidadeTotal = auth?.user ? carrinho?.quantidade_total || 0 : cartItems.reduce((sum, item) => sum + item.quantidade, 0);
 
-  const atualizarQuantidade = async (itemId: number, novaQuantidade: number) => {
-    if (novaQuantidade < 1) return;
+    const atualizarQuantidade = async (itemId: number, novaQuantidade: number) => {
+        if (novaQuantidade < 1) return;
 
-    if (auth?.user) {
-      // Usuário autenticado - usar API
-      try {
-        const response = await fetch(`/carrinho/quantidade/${itemId}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-          },
-          body: JSON.stringify({
-            quantidade: novaQuantidade,
-          }),
-        });
+        if (auth?.user) {
+            // Usuário autenticado - usar API
+            try {
+                const response = await fetch(`/carrinho/quantidade/${itemId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                    body: JSON.stringify({
+                        quantidade: novaQuantidade,
+                    }),
+                });
 
-        if (response.ok) {
-          window.location.reload();
+                if (response.ok) {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Erro ao atualizar quantidade:', error);
+            }
+        } else {
+            // Visitante - usar localStorage
+            updateQuantity(itemId, novaQuantidade);
         }
-      } catch (error) {
-        console.error('Erro ao atualizar quantidade:', error);
-      }
-    } else {
-      // Visitante - usar localStorage
-      updateQuantity(itemId, novaQuantidade);
-    }
-  };
+    };
 
-  const removerItem = async (itemId: number) => {
-    if (auth?.user) {
-      // Usuário autenticado - usar API
-      try {
-        const response = await fetch(`/carrinho/item/${itemId}`, {
-          method: 'DELETE',
-          headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-          },
-        });
+    const removerItem = async (itemId: number) => {
+        if (auth?.user) {
+            // Usuário autenticado - usar API
+            try {
+                const response = await fetch(`/carrinho/item/${itemId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                });
 
-        if (response.ok) {
-          window.location.reload();
+                if (response.ok) {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Erro ao remover item:', error);
+            }
+        } else {
+            // Visitante - usar localStorage
+            removeFromCart(itemId);
         }
-      } catch (error) {
-        console.error('Erro ao remover item:', error);
-      }
-    } else {
-      // Visitante - usar localStorage
-      removeFromCart(itemId);
-    }
-  };
+    };
 
-  const limparCarrinho = async () => {
-    if (!confirm('Tem certeza que deseja limpar o carrinho?')) return;
+    const limparCarrinho = async () => {
+        if (!confirm('Tem certeza que deseja limpar o carrinho?')) return;
 
-    if (auth?.user) {
-      // Usuário autenticado - usar API
-      try {
-        const response = await fetch('/carrinho/limpar', {
-          method: 'DELETE',
-          headers: {
-            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-          },
-        });
+        if (auth?.user) {
+            // Usuário autenticado - usar API
+            try {
+                const response = await fetch('/carrinho/limpar', {
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    },
+                });
 
-        if (response.ok) {
-          window.location.reload();
+                if (response.ok) {
+                    window.location.reload();
+                }
+            } catch (error) {
+                console.error('Erro ao limpar carrinho:', error);
+            }
+        } else {
+            // Visitante - usar localStorage
+            clearCart();
         }
-      } catch (error) {
-        console.error('Erro ao limpar carrinho:', error);
-      }
-    } else {
-      // Visitante - usar localStorage
-      clearCart();
-    }
-  };
+    };
 
-  const finalizarPedido = async () => {
-    if (items.length === 0) {
-      alert('Carrinho vazio!');
-      return;
-    }
-
-    if (!auth?.user) {
-      // Redirecionar para login se não estiver autenticado
-      router.visit('/login');
-      return;
-    }
-
-    setIsFinalizando(true);
-
-    try {
-      const response = await fetch('/pedidos/finalizar', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
-        },
-        body: JSON.stringify({
-          observacoes,
-        }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          alert('Pedido finalizado com sucesso!');
-          router.visit('/pedidos');
+    const finalizarPedido = async () => {
+        if (items.length === 0) {
+            alert('Carrinho vazio!');
+            return;
         }
-      } else {
-        const errorData = await response.json();
-        alert(errorData.message || 'Erro ao finalizar pedido');
-      }
-    } catch (error) {
-      console.error('Erro ao finalizar pedido:', error);
-      alert('Erro ao finalizar pedido');
-    } finally {
-      setIsFinalizando(false);
-    }
-  };
 
-  return (
-    <>
-      <Head title="Carrinho" />
-      
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-4 sm:py-6 lg:py-8">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto">
-            {/* Header */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 sm:mb-8"
-            >
-              <div className="flex items-center">
-                <Button
-                  variant="ghost"
-                  onClick={() => router.visit('/')}
-                  className="mr-3 sm:mr-4 text-orange-700 hover:text-orange-900 hover:bg-orange-100"
-                >
-                  <ArrowLeft className="h-4 w-4 mr-1 sm:mr-2" />
-                  <span className="hidden sm:inline">Voltar</span>
-                </Button>
-                <div>
-                  <h1 className="text-2xl sm:text-3xl font-bold text-orange-900">Carrinho</h1>
-                  <Badge className="mt-1 sm:mt-2 bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 text-xs sm:text-sm">
-                    {items.length} item{items.length !== 1 ? 's' : ''}
-                  </Badge>
-                </div>
-              </div>
-              {items.length > 0 && (
-                <Button
-                  variant="outline"
-                  onClick={limparCarrinho}
-                  className="text-red-600 hover:text-red-700 border-red-300 hover:bg-red-50 w-full sm:w-auto"
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Limpar Carrinho
-                </Button>
-              )}
-            </motion.div>
+        if (!auth?.user) {
+            // Redirecionar para login se não estiver autenticado
+            router.visit('/login');
+            return;
+        }
 
-            {items.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
-              >
-                <Card className="text-center py-8 sm:py-12 border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-xl">
-                  <CardContent>
-                    <ShoppingCart className="h-12 w-12 sm:h-16 sm:w-16 text-orange-400 mx-auto mb-4" />
-                    <h3 className="text-lg sm:text-xl font-semibold text-orange-800 mb-2">
-                      Seu carrinho está vazio
-                    </h3>
-                    <p className="text-orange-600 mb-6 text-sm sm:text-base">
-                      Adicione alguns produtos para começar suas compras
-                    </p>
-                    <Button
-                      onClick={() => router.visit('/')}
-                      className="bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transition-all duration-300 text-white font-semibold"
-                    >
-                      Ver Cardápio
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">
-                {/* Lista de Itens */}
-                <div className="lg:col-span-2">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.1 }}
-                  >
-                    <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-xl">
-                      <CardHeader className="bg-gradient-to-r from-orange-100 to-red-100 border-b border-orange-200">
-                        <CardTitle className="text-orange-800 text-lg sm:text-xl">Itens do Carrinho</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3 sm:space-y-4 p-4 sm:p-6">
-                        {items.map((item, index) => (
-                          <motion.div
-                            key={item.id}
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
-                            whileHover={{ x: 5 }}
-                            className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 p-3 sm:p-4 border-2 border-orange-200 rounded-lg bg-white shadow-md hover:shadow-lg transition-all duration-300"
-                          >
-                            <img
-                              src={isCarrinhoItem(item) ? item.produto.imagem : item.imagem}
-                              alt={isCarrinhoItem(item) ? item.produto.nome : item.nome}
-                              className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-lg border-2 border-orange-200 flex-shrink-0"
-                            />
-                            
-                            <div className="flex-1 min-w-0">
-                              <h3 className="font-semibold text-base sm:text-lg text-orange-800 line-clamp-2">
-                                {isCarrinhoItem(item) ? item.produto.nome : item.nome}
-                              </h3>
-                              {isCarrinhoItem(item) && (
-                                <p className="text-orange-600 text-sm line-clamp-2 mt-1">
-                                  {item.produto.descricao}
-                                </p>
-                              )}
-                              <p className="text-orange-600 font-semibold mt-1 text-sm sm:text-base">
-                                R$ {(isCarrinhoItem(item) ? Number(item.preco_unitario) : Number(item.preco)).toFixed(2).replace('.', ',')}
-                              </p>
-                            </div>
+        setIsFinalizando(true);
 
-                            <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-4">
-                              <div className="flex items-center space-x-2">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => atualizarQuantidade(item.id, item.quantidade - 1)}
-                                  disabled={item.quantidade <= 1}
-                                  className="border-orange-300 text-orange-600 hover:bg-orange-50 h-8 w-8 p-0"
-                                >
-                                  <Minus className="h-3 w-3" />
-                                </Button>
-                                
-                                <span className="w-8 sm:w-12 text-center font-semibold text-orange-800 text-sm sm:text-base">
-                                  {item.quantidade}
-                                </span>
-                                
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => atualizarQuantidade(item.id, item.quantidade + 1)}
-                                  className="border-orange-300 text-orange-600 hover:bg-orange-50 h-8 w-8 p-0"
-                                >
-                                  <Plus className="h-3 w-3" />
-                                </Button>
-                              </div>
+        try {
+            const response = await fetch('/pedidos/finalizar', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                },
+                body: JSON.stringify({
+                    observacoes,
+                }),
+            });
 
-                              <div className="text-right">
-                                <p className="font-bold text-base sm:text-lg text-orange-600">
-                                  R$ {(item.quantidade * (isCarrinhoItem(item) ? item.preco_unitario : Number(item.preco))).toFixed(2).replace('.', ',')}
-                                </p>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => removerItem(item.id)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50 mt-1 h-8 w-8 p-0"
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </motion.div>
-                        ))}
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </div>
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success) {
+                    alert('Pedido finalizado com sucesso!');
+                    router.visit('/pedidos');
+                }
+            } else {
+                const errorData = await response.json();
+                alert(errorData.message || 'Erro ao finalizar pedido');
+            }
+        } catch (error) {
+            console.error('Erro ao finalizar pedido:', error);
+            alert('Erro ao finalizar pedido');
+        } finally {
+            setIsFinalizando(false);
+        }
+    };
 
-                {/* Resumo do Pedido */}
-                <div className="lg:col-span-1">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.2 }}
-                    className="sticky top-4 sm:top-8"
-                  >
-                    <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-xl">
-                      <CardHeader className="bg-gradient-to-r from-orange-100 to-red-100 border-b border-orange-200">
-                        <CardTitle className="flex items-center text-orange-800 text-lg sm:text-xl">
-                          <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                          Resumo do Pedido
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4 p-4 sm:p-6">
-                        {/* Detalhes do Pedido */}
-                        <div className="space-y-3">
-                          <div className="flex justify-between items-center py-2">
-                            <span className="text-orange-600 text-sm sm:text-base">Subtotal ({quantidadeTotal} itens):</span>
-                            <span className="font-semibold text-orange-800 text-sm sm:text-base">
-                              R$ {Number(total).toFixed(2).replace('.', ',')}
-                            </span>
-                          </div>
-                          <div className="flex justify-between items-center py-2">
-                            <span className="text-orange-600 text-sm sm:text-base">Taxa de entrega:</span>
-                            <Badge className="bg-green-500/20 text-green-600 border-green-500/30 text-xs sm:text-sm">Grátis</Badge>
-                          </div>
-                          <hr className="border-orange-200" />
-                          <div className="flex justify-between items-center">
-                            <span className="text-base sm:text-lg font-bold text-orange-800">Total:</span>
-                            <span className="text-xl sm:text-2xl font-bold text-orange-600">
-                              R$ {Number(total).toFixed(2).replace('.', ',')}
-                            </span>
-                          </div>
-                        </div>
+    return (
+        <>
+            <Head title="Carrinho" />
 
-                        {/* Observações */}
-                        {auth?.user && (
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-orange-700">Observações:</label>
-                            <Textarea
-                              placeholder="Alguma observação especial para seu pedido?"
-                              value={observacoes}
-                              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setObservacoes(e.target.value)}
-                              rows={3}
-                              className="bg-white border-orange-300 text-orange-800 focus:border-orange-500 focus:ring-orange-500 text-sm"
-                            />
-                          </div>
-                        )}
-
-                        {/* Botão de Finalizar */}
-                        {auth?.user ? (
-                          <Button
-                            onClick={finalizarPedido}
-                            disabled={isFinalizando}
-                            className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transition-all duration-300 text-white font-semibold py-3"
-                            size="lg"
-                          >
-                            {isFinalizando ? (
-                              <>
-                                <div className="animate-spin rounded-full h-4 w-4 sm:h-5 sm:w-5 border-b-2 border-white mr-2" />
-                                Finalizando...
-                              </>
-                            ) : (
-                              <>
-                                <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                                Finalizar Pedido
-                              </>
-                            )}
-                          </Button>
-                        ) : (
-                          <Button
-                            onClick={() => router.visit('/login')}
-                            className="w-full bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700 transition-all duration-300 text-white font-semibold py-3"
-                            size="lg"
-                          >
-                            <LogIn className="h-4 w-4 sm:h-5 sm:w-5 mr-2" />
-                            Fazer Login para Finalizar
-                          </Button>
-                        )}
-
-                        {/* Botão Continuar Comprando */}
-                        <Button
-                          variant="outline"
-                          onClick={() => router.visit('/')}
-                          className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
+            <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50 py-4 sm:py-6 lg:py-8">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+                    <div className="mx-auto max-w-4xl">
+                        {/* Header */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6 }}
+                            className="mb-6 flex flex-col gap-4 sm:mb-8 sm:flex-row sm:items-center sm:justify-between"
                         >
-                          Continuar Comprando
-                        </Button>
-
-                        {/* Informações Adicionais */}
-                        <div className="bg-blue-500/10 rounded-lg border border-blue-500/20 p-3 sm:p-4">
-                          <div className="flex items-start gap-2 sm:gap-3">
-                            <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                            <div>
-                              <p className="text-xs sm:text-sm font-medium text-blue-600 mb-1">
-                                {auth?.user ? 'Pedido em Preparação' : 'Login Necessário'}
-                              </p>
-                              <p className="text-xs sm:text-sm text-blue-600">
-                                {auth?.user 
-                                  ? 'Seu pedido será preparado assim que confirmarmos o pagamento.'
-                                  : 'Faça login para finalizar seu pedido e acompanhar o status.'
-                                }
-                              </p>
+                            <div className="flex items-center">
+                                <Button
+                                    variant="ghost"
+                                    onClick={() => router.visit('/')}
+                                    className="mr-3 text-orange-700 hover:bg-orange-100 hover:text-orange-900 sm:mr-4"
+                                >
+                                    <ArrowLeft className="mr-1 h-4 w-4 sm:mr-2" />
+                                    <span className="hidden sm:inline">Voltar</span>
+                                </Button>
+                                <div>
+                                    <h1 className="text-2xl font-bold text-orange-900 sm:text-3xl">Carrinho</h1>
+                                    <Badge className="mt-1 border-0 bg-gradient-to-r from-orange-500 to-red-500 text-xs text-white sm:mt-2 sm:text-sm">
+                                        {items.length} item{items.length !== 1 ? 's' : ''}
+                                    </Badge>
+                                </div>
                             </div>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                            {items.length > 0 && (
+                                <Button
+                                    variant="outline"
+                                    onClick={limparCarrinho}
+                                    className="w-full border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700 sm:w-auto"
+                                >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Limpar Carrinho
+                                </Button>
+                            )}
+                        </motion.div>
+
+                        {items.length === 0 ? (
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ duration: 0.5, delay: 0.2 }}
+                            >
+                                <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white py-8 text-center shadow-xl sm:py-12">
+                                    <CardContent>
+                                        <ShoppingCart className="mx-auto mb-4 h-12 w-12 text-orange-400 sm:h-16 sm:w-16" />
+                                        <h3 className="mb-2 text-lg font-semibold text-orange-800 sm:text-xl">Seu carrinho está vazio</h3>
+                                        <p className="mb-6 text-sm text-orange-600 sm:text-base">
+                                            Adicione alguns produtos para começar suas compras
+                                        </p>
+                                        <Button
+                                            onClick={() => router.visit('/')}
+                                            className="bg-gradient-to-r from-orange-600 to-red-600 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700"
+                                        >
+                                            Ver Cardápio
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </motion.div>
+                        ) : (
+                            <div className="grid grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-3">
+                                {/* Lista de Itens */}
+                                <div className="lg:col-span-2">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.6, delay: 0.1 }}
+                                    >
+                                        <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-xl">
+                                            <CardHeader className="border-b border-orange-200 bg-gradient-to-r from-orange-100 to-red-100">
+                                                <CardTitle className="text-lg text-orange-800 sm:text-xl">Itens do Carrinho</CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-3 p-4 sm:space-y-4 sm:p-6">
+                                                {items.map((item, index) => (
+                                                    <motion.div
+                                                        key={item.id}
+                                                        initial={{ opacity: 0, x: -20 }}
+                                                        animate={{ opacity: 1, x: 0 }}
+                                                        transition={{ duration: 0.5, delay: index * 0.1 }}
+                                                        whileHover={{ x: 5 }}
+                                                        className="flex flex-col gap-3 rounded-lg border-2 border-orange-200 bg-white p-3 shadow-md transition-all duration-300 hover:shadow-lg sm:flex-row sm:items-center sm:gap-4 sm:p-4"
+                                                    >
+                                                        <img
+                                                            src={isCarrinhoItem(item) ? item.produto.imagem : item.imagem}
+                                                            alt={isCarrinhoItem(item) ? item.produto.nome : item.nome}
+                                                            className="h-16 w-16 flex-shrink-0 rounded-lg border-2 border-orange-200 object-cover sm:h-20 sm:w-20"
+                                                        />
+
+                                                        <div className="min-w-0 flex-1">
+                                                            <h3 className="line-clamp-2 text-base font-semibold text-orange-800 sm:text-lg">
+                                                                {isCarrinhoItem(item) ? item.produto.nome : item.nome}
+                                                            </h3>
+                                                            {isCarrinhoItem(item) && (
+                                                                <p className="mt-1 line-clamp-2 text-sm text-orange-600">{item.produto.descricao}</p>
+                                                            )}
+                                                            <p className="mt-1 text-sm font-semibold text-orange-600 sm:text-base">
+                                                                R${' '}
+                                                                {(isCarrinhoItem(item) ? Number(item.preco_unitario) : Number(item.preco))
+                                                                    .toFixed(2)
+                                                                    .replace('.', ',')}
+                                                            </p>
+                                                        </div>
+
+                                                        <div className="flex items-center justify-between gap-2 sm:justify-end sm:gap-4">
+                                                            <div className="flex items-center space-x-2">
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => atualizarQuantidade(item.id, item.quantidade - 1)}
+                                                                    disabled={item.quantidade <= 1}
+                                                                    className="h-8 w-8 border-orange-300 p-0 text-orange-600 hover:bg-orange-50"
+                                                                >
+                                                                    <Minus className="h-3 w-3" />
+                                                                </Button>
+
+                                                                <span className="w-8 text-center text-sm font-semibold text-orange-800 sm:w-12 sm:text-base">
+                                                                    {item.quantidade}
+                                                                </span>
+
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={() => atualizarQuantidade(item.id, item.quantidade + 1)}
+                                                                    className="h-8 w-8 border-orange-300 p-0 text-orange-600 hover:bg-orange-50"
+                                                                >
+                                                                    <Plus className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
+
+                                                            <div className="text-right">
+                                                                <p className="text-base font-bold text-orange-600 sm:text-lg">
+                                                                    R${' '}
+                                                                    {(
+                                                                        item.quantidade *
+                                                                        (isCarrinhoItem(item) ? item.preco_unitario : Number(item.preco))
+                                                                    )
+                                                                        .toFixed(2)
+                                                                        .replace('.', ',')}
+                                                                </p>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={() => removerItem(item.id)}
+                                                                    className="mt-1 h-8 w-8 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                                                                >
+                                                                    <Trash2 className="h-3 w-3" />
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    </motion.div>
+                                                ))}
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                </div>
+
+                                {/* Resumo do Pedido */}
+                                <div className="lg:col-span-1">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 20 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.6, delay: 0.2 }}
+                                        className="sticky top-4 sm:top-8"
+                                    >
+                                        <Card className="border-2 border-orange-200 bg-gradient-to-br from-orange-50 to-white shadow-xl">
+                                            <CardHeader className="border-b border-orange-200 bg-gradient-to-r from-orange-100 to-red-100">
+                                                <CardTitle className="flex items-center text-lg text-orange-800 sm:text-xl">
+                                                    <CreditCard className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                                    Resumo do Pedido
+                                                </CardTitle>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4 p-4 sm:p-6">
+                                                {/* Detalhes do Pedido */}
+                                                <div className="space-y-3">
+                                                    <div className="flex items-center justify-between py-2">
+                                                        <span className="text-sm text-orange-600 sm:text-base">
+                                                            Subtotal ({quantidadeTotal} itens):
+                                                        </span>
+                                                        <span className="text-sm font-semibold text-orange-800 sm:text-base">
+                                                            R$ {Number(total).toFixed(2).replace('.', ',')}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between py-2">
+                                                        <span className="text-sm text-orange-600 sm:text-base">Taxa de entrega:</span>
+                                                        <Badge className="border-green-500/30 bg-green-500/20 text-xs text-green-600 sm:text-sm">
+                                                            Grátis
+                                                        </Badge>
+                                                    </div>
+                                                    <hr className="border-orange-200" />
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-base font-bold text-orange-800 sm:text-lg">Total:</span>
+                                                        <span className="text-xl font-bold text-orange-600 sm:text-2xl">
+                                                            R$ {Number(total).toFixed(2).replace('.', ',')}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Observações */}
+                                                {auth?.user && (
+                                                    <div className="space-y-2">
+                                                        <label className="text-sm font-medium text-orange-700">Observações:</label>
+                                                        <Textarea
+                                                            placeholder="Alguma observação especial para seu pedido?"
+                                                            value={observacoes}
+                                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setObservacoes(e.target.value)}
+                                                            rows={3}
+                                                            className="border-orange-300 bg-white text-sm text-orange-800 focus:border-orange-500 focus:ring-orange-500"
+                                                        />
+                                                    </div>
+                                                )}
+
+                                                {/* Botão de Finalizar */}
+                                                {auth?.user ? (
+                                                    <Button
+                                                        onClick={finalizarPedido}
+                                                        disabled={isFinalizando}
+                                                        className="w-full bg-gradient-to-r from-orange-600 to-red-600 py-3 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700"
+                                                        size="lg"
+                                                    >
+                                                        {isFinalizando ? (
+                                                            <>
+                                                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-b-2 border-white sm:h-5 sm:w-5" />
+                                                                Finalizando...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <CreditCard className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                                                Finalizar Pedido
+                                                            </>
+                                                        )}
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        onClick={() => router.visit('/login')}
+                                                        className="w-full bg-gradient-to-r from-orange-600 to-red-600 py-3 font-semibold text-white transition-all duration-300 hover:from-orange-700 hover:to-red-700"
+                                                        size="lg"
+                                                    >
+                                                        <LogIn className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
+                                                        Fazer Login para Finalizar
+                                                    </Button>
+                                                )}
+
+                                                {/* Botão Continuar Comprando */}
+                                                <Button
+                                                    variant="outline"
+                                                    onClick={() => router.visit('/')}
+                                                    className="w-full border-orange-300 text-orange-700 hover:bg-orange-50"
+                                                >
+                                                    Continuar Comprando
+                                                </Button>
+
+                                                {/* Informações Adicionais */}
+                                                <div className="rounded-lg border border-blue-500/20 bg-blue-500/10 p-3 sm:p-4">
+                                                    <div className="flex items-start gap-2 sm:gap-3">
+                                                        <Clock className="mt-0.5 h-4 w-4 flex-shrink-0 text-blue-400 sm:h-5 sm:w-5" />
+                                                        <div>
+                                                            <p className="mb-1 text-xs font-medium text-blue-600 sm:text-sm">
+                                                                {auth?.user ? 'Pedido em Preparação' : 'Login Necessário'}
+                                                            </p>
+                                                            <p className="text-xs text-blue-600 sm:text-sm">
+                                                                {auth?.user
+                                                                    ? 'Seu pedido será preparado assim que confirmarmos o pagamento.'
+                                                                    : 'Faça login para finalizar seu pedido e acompanhar o status.'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </motion.div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-    </>
-  );
-} 
+            </div>
+        </>
+    );
+}
