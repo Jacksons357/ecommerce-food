@@ -1,4 +1,4 @@
-# 🍔 Global Food - Ecommerce Global Technologies
+# 🍔 Global Food - Ecommerce
 
 Um sistema moderno e completo de gerenciamento de cardápio/produtos com funcionalidades específicas para clientes e administradores, desenvolvido com Laravel, React, TypeScript e TailwindCSS.
 
